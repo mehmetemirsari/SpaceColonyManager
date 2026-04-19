@@ -22,6 +22,6 @@ public class Pilot extends CrewMember {
      */
     @Override
     public int act() {
-        return getSkill() + (getExperience() / 100) + (int) (Math.random() * 4);
+        return getEffectiveSkill() + (int) (Math.random() * 4);
     }
 }

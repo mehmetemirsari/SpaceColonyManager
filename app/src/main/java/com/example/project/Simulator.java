@@ -17,7 +17,7 @@ public class Simulator {
     public boolean trainCrew(CrewMember member) {
         if (member == null) return false;
         if (member.isInjured()) return false;
-        if (!"Simulator".equals(member.getLocation())) return false;
+        if (!CrewMember.LOCATION_SIMULATOR.equals(member.getLocation())) return false;
         if (member.getCurrentEnergy() < 10) return false;
 
         member.train();

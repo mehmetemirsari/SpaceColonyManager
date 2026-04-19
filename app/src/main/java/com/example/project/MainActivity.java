@@ -2,39 +2,68 @@ package com.example.project;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.View;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.activity.OnBackPressedCallback;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+
 import java.util.List;
+import java.util.Random;
 
 /**
  * Main activity for the Space Colony Manager application.
  * <p>
- * This activity owns the core game state and manager objects, handles tab navigation,
- * and persists the colony between app sessions.
+ * This activity owns the colony state, persists the game between launches, manages menu music,
+ * and exposes shared gameplay actions to the fragment layer.
  */
 public class MainActivity extends AppCompatActivity {
 
-    /** Core crew storage for the colony. */
+    private static final String PREFS_NAME = "SpaceColonyPrefs";
+    private static final String MANUAL_SAVE_PREFIX = "manual_";
+    private static final String KEY_SAVE_PRESENT = "save_present";
+    private static final String KEY_CREW_DATA = "crew_data";
+    private static final String KEY_COLONY_RESOURCES = "colony_resources";
+    private static final String KEY_CURRENT_DAY = "current_day";
+    private static final String KEY_TOTAL_MISSIONS = "total_missions";
+    private static final String KEY_TOTAL_WINS = "total_wins";
+    private static final String KEY_COMPLETED_MISSIONS = "completed_missions";
+    private static final String KEY_GAME_OVER = "game_over";
+    private static final String KEY_GAME_OVER_REASON = "game_over_reason";
+    private static final String KEY_THREAT_DATA = "threat_data";
+    private static final String KEY_ACTIVE_MISSION = "active_mission";
+    private static final String KEY_ACTIVE_MEMBER_A = "active_member_a";
+    private static final String KEY_ACTIVE_MEMBER_B = "active_member_b";
+    private static final String KEY_TACTIC_A = "tactic_a";
+    private static final String KEY_TACTIC_B = "tactic_b";
+
     private Storage storage;
-    /** Quarters manager used for rest and recovery actions. */
     private Quarters quarters;
-    /** Simulator manager used for training actions. */
     private Simulator simulator;
-    /** Statistics tracker for colony mission performance. */
     private StatisticsManager statisticsManager;
-    /** Mission manager for launch, cancel, and resolve flows. */
     private MissionControl missionControl;
-    /** Save/load helper for persistence. */
     private SaveLoadManager saveLoadManager;
-    /** Current colony resource pool. */
+    private MusicManager musicManager;
+    private Random random;
+    private BottomNavigationView bottomNav;
+
     private int colonyResources;
-    /** Current in-game day. */
     private int currentDay;
+    private boolean gameOver;
+    private String gameOverReason;
+    private final OnBackPressedCallback gameOverBackCallback = new OnBackPressedCallback(false) {
+        @Override
+        public void handleOnBackPressed() {
+            // Game-over screen is intentionally non-dismissible.
+        }
+    };
 
     /**
-     * Creates the activity, initializes the game systems, restores saved state,
-     * and wires bottom navigation to fragments.
+     * Creates the activity, restores colony state, and wires bottom navigation.
      *
      * @param savedInstanceState previously saved instance state, if any
      */
@@ -45,10 +74,18 @@ public class MainActivity extends AppCompatActivity {
 
         initializeGameSystems();
         loadGame();
+        if (!gameOver) {
+            ensureThreatReady();
+        }
 
-        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
-
+        bottomNav = findViewById(R.id.bottom_navigation);
+        getOnBackPressedDispatcher().addCallback(this, gameOverBackCallback);
         bottomNav.setOnItemSelectedListener(item -> {
+            if (gameOver) {
+                showGameOverScreenIfNeeded();
+                return false;
+            }
+
             Fragment selectedFragment = null;
             int itemId = item.getItemId();
 
@@ -67,53 +104,101 @@ public class MainActivity extends AppCompatActivity {
             }
 
             if (selectedFragment != null) {
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, selectedFragment)
-                        .commit();
+                showPrimaryFragment(selectedFragment);
             }
             return true;
         });
 
-        if (savedInstanceState == null) {
+        updateGameOverUi();
+        if (gameOver) {
+            showGameOverScreenIfNeeded();
+        } else if (savedInstanceState == null) {
             bottomNav.setSelectedItemId(R.id.nav_home);
         }
     }
 
     /**
-     * Saves the current game automatically whenever the app is paused.
+     * Resumes menu music when the activity returns to the foreground.
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        musicManager.resume();
+    }
+
+    /**
+     * Persists the colony state and pauses menu music.
      */
     @Override
     protected void onPause() {
         super.onPause();
         saveGame();
+        musicManager.pause();
+    }
+
+    /**
+     * Releases audio resources when the activity is destroyed.
+     */
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        musicManager.release();
     }
 
     /**
      * Initializes all core managers and default colony values.
      */
     private void initializeGameSystems() {
-        this.storage = new Storage();
-        this.quarters = new Quarters();
-        this.simulator = new Simulator();
-        this.statisticsManager = new StatisticsManager();
-        this.missionControl = new MissionControl(storage, statisticsManager);
-        this.saveLoadManager = new SaveLoadManager();
-        this.colonyResources = 150;
-        this.currentDay = 1;
+        if (musicManager == null) {
+            musicManager = new MusicManager(this);
+        }
+        resetRuntimeState();
     }
 
     /**
      * Saves the current colony state into SharedPreferences.
      */
     private void saveGame() {
-        SharedPreferences sp = getSharedPreferences("SpaceColonyPrefs", MODE_PRIVATE);
-        SharedPreferences.Editor editor = sp.edit();
-        editor.putString("crew_data", saveLoadManager.createJsonFromStorage(storage));
-        editor.putInt("colony_resources", colonyResources);
-        editor.putInt("current_day", currentDay);
-        editor.putInt("total_missions", statisticsManager.getTotalMissions());
-        editor.putInt("total_wins", statisticsManager.getTotalWins());
-        editor.putInt("completed_missions", missionControl.getCompletedMissions());
+        saveGameToSlot("");
+    }
+
+    /**
+     * Saves the current colony state into the requested preference slot.
+     *
+     * @param prefix key prefix for the target save slot
+     */
+    private void saveGameToSlot(@NonNull String prefix) {
+        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(prefix + KEY_SAVE_PRESENT, true);
+        editor.putString(prefix + KEY_CREW_DATA, saveLoadManager.createJsonFromStorage(storage));
+        editor.putInt(prefix + KEY_COLONY_RESOURCES, colonyResources);
+        editor.putInt(prefix + KEY_CURRENT_DAY, currentDay);
+        editor.putInt(prefix + KEY_TOTAL_MISSIONS, statisticsManager.getTotalMissions());
+        editor.putInt(prefix + KEY_TOTAL_WINS, statisticsManager.getTotalWins());
+        editor.putInt(prefix + KEY_COMPLETED_MISSIONS, missionControl.getCompletedMissions());
+        editor.putBoolean(prefix + KEY_GAME_OVER, gameOver);
+        editor.putString(prefix + KEY_GAME_OVER_REASON, gameOverReason);
+        editor.putString(prefix + KEY_THREAT_DATA,
+                saveLoadManager.createJsonFromThreat(missionControl.getCurrentThreat()));
+
+        if (missionControl.hasActiveMission()
+                && missionControl.getActiveMemberA() != null
+                && missionControl.getActiveMemberB() != null) {
+            editor.putBoolean(prefix + KEY_ACTIVE_MISSION, true);
+            editor.putInt(prefix + KEY_ACTIVE_MEMBER_A, missionControl.getActiveMemberA().getId());
+            editor.putInt(prefix + KEY_ACTIVE_MEMBER_B, missionControl.getActiveMemberB().getId());
+            editor.putString(prefix + KEY_TACTIC_A, missionControl.getTacticA());
+            editor.putString(prefix + KEY_TACTIC_B, missionControl.getTacticB());
+        } else {
+            editor.putBoolean(prefix + KEY_ACTIVE_MISSION, false);
+            editor.remove(prefix + KEY_ACTIVE_MEMBER_A);
+            editor.remove(prefix + KEY_ACTIVE_MEMBER_B);
+            editor.remove(prefix + KEY_TACTIC_A);
+            editor.remove(prefix + KEY_TACTIC_B);
+        }
+
+        musicManager.writePreferences(editor, prefix);
         editor.apply();
     }
 
@@ -121,55 +206,375 @@ public class MainActivity extends AppCompatActivity {
      * Loads any previously saved colony state from SharedPreferences.
      */
     private void loadGame() {
-        SharedPreferences sp = getSharedPreferences("SpaceColonyPrefs", MODE_PRIVATE);
-        String crewJson = sp.getString("crew_data", null);
+        loadGameFromSlot("");
+    }
+
+    /**
+     * Loads colony state from the requested preference slot.
+     *
+     * @param prefix key prefix for the target save slot
+     * @return {@code true} when a save was restored
+     */
+    private boolean loadGameFromSlot(@NonNull String prefix) {
+        resetRuntimeState();
+
+        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        if (!prefix.isEmpty() && !sharedPreferences.getBoolean(prefix + KEY_SAVE_PRESENT, false)) {
+            musicManager.restorePreferences(sharedPreferences, "");
+            updateGameOverUi();
+            return false;
+        }
+
+        String crewJson = sharedPreferences.getString(prefix + KEY_CREW_DATA, null);
         if (crewJson != null) {
             List<CrewMember> loadedCrew = saveLoadManager.loadStorageFromJson(crewJson);
-            for (CrewMember c : loadedCrew) {
-                storage.addCrewMember(c);
+            for (CrewMember crewMember : loadedCrew) {
+                storage.addCrewMember(crewMember);
             }
         }
-        colonyResources = sp.getInt("colony_resources", 150);
-        currentDay = sp.getInt("current_day", 1);
-        statisticsManager.setTotalMissions(sp.getInt("total_missions", 0));
-        statisticsManager.setTotalWins(sp.getInt("total_wins", 0));
-        missionControl.setCompletedMissions(sp.getInt("completed_missions", 0));
+
+        colonyResources = sharedPreferences.getInt(prefix + KEY_COLONY_RESOURCES, 150);
+        currentDay = sharedPreferences.getInt(prefix + KEY_CURRENT_DAY, 1);
+        statisticsManager.setTotalMissions(sharedPreferences.getInt(prefix + KEY_TOTAL_MISSIONS, 0));
+        statisticsManager.setTotalWins(sharedPreferences.getInt(prefix + KEY_TOTAL_WINS, 0));
+        missionControl.setCompletedMissions(sharedPreferences.getInt(prefix + KEY_COMPLETED_MISSIONS, 0));
+        gameOver = sharedPreferences.getBoolean(prefix + KEY_GAME_OVER, false);
+        gameOverReason = sharedPreferences.getString(prefix + KEY_GAME_OVER_REASON, "");
+        musicManager.restorePreferences(sharedPreferences, prefix);
+
+        Threat savedThreat = saveLoadManager.loadThreatFromJson(
+                sharedPreferences.getString(prefix + KEY_THREAT_DATA, null));
+        missionControl.setCurrentThreat(savedThreat);
+
+        if (sharedPreferences.getBoolean(prefix + KEY_ACTIVE_MISSION, false)) {
+            CrewMember memberA = storage.getCrewMember(
+                    sharedPreferences.getInt(prefix + KEY_ACTIVE_MEMBER_A, -1));
+            CrewMember memberB = storage.getCrewMember(
+                    sharedPreferences.getInt(prefix + KEY_ACTIVE_MEMBER_B, -1));
+            missionControl.restoreActiveMission(memberA, memberB,
+                    sharedPreferences.getString(prefix + KEY_TACTIC_A, MissionControl.TACTIC_ATTACK),
+                    sharedPreferences.getString(prefix + KEY_TACTIC_B, MissionControl.TACTIC_ATTACK));
+        }
+
+        updateGameOverUi();
+        return true;
+    }
+
+    /**
+     * Advances the colony to the next in-game day and applies passive recovery.
+     *
+     * @param reason brief gameplay summary used in the UI log
+     * @return user-facing day advancement summary
+     */
+    public String advanceDay(@NonNull String reason) {
+        if (gameOver) {
+            return gameOverReason;
+        }
+
+        currentDay++;
+        storage.advanceRecoveryDay();
+
+        StringBuilder summary = new StringBuilder();
+        summary.append("Day ").append(currentDay).append(": ").append(reason);
+
+        if (missionControl.isThreatOverdue(currentDay)) {
+            Threat overdueThreat = missionControl.getCurrentThreat();
+            triggerGameOver("Day " + currentDay + ": " + overdueThreat.getName()
+                    + " remained active for too long. The colony has fallen.");
+            summary.append("\n").append(gameOverReason);
+            return summary.toString();
+        }
+
+        boolean spawnedThreat = missionControl.getCurrentThreat() == null;
+        Threat threat = ensureThreatReady();
+        if (spawnedThreat && threat != null) {
+            summary.append("\nNew threat detected: ")
+                    .append(threat.getName())
+                    .append(" [")
+                    .append(threat.getCategory())
+                    .append(" / ")
+                    .append(threat.getArchetype())
+                    .append("], deadline Day ")
+                    .append(threat.getDeadlineDay())
+                    .append(".");
+        }
+
+        return summary.toString();
+    }
+
+    /**
+     * Trains one crew member and consumes one in-game day on success.
+     *
+     * @param member crew member selected in the Simulator
+     * @return user-facing training result
+     */
+    public String trainCrewMember(CrewMember member) {
+        if (gameOver) {
+            return gameOverReason;
+        }
+        if (missionControl.hasActiveMission()) {
+            return "Resolve or cancel the active mission before training the colony.";
+        }
+        if (!simulator.trainCrew(member)) {
+            return member.getName() + " could not train right now.";
+        }
+        return advanceDay(member.getName() + " completed simulator drills and gained 25 XP.");
+    }
+
+    /**
+     * Applies a colony-wide recovery day in Quarters.
+     *
+     * @return user-facing rest result
+     */
+    public String restAllCrew() {
+        if (gameOver) {
+            return gameOverReason;
+        }
+        if (missionControl.hasActiveMission()) {
+            return "Resolve or cancel the active mission before resting the whole colony.";
+        }
+
+        quarters.restAll(storage);
+        return advanceDay("The colony spent the day recovering in Quarters.");
+    }
+
+    /**
+     * Resolves the active mission, applies rewards, and advances the day.
+     *
+     * @return structured mission replay result
+     */
+    public MissionResolution resolveActiveMission() {
+        if (gameOver) {
+            List<MissionEvent> events = new java.util.ArrayList<>();
+            events.add(new MissionEvent(MissionEvent.TYPE_OUTCOME, "Colony Lost", gameOverReason));
+            return new MissionResolution(false, false, 0, 0, events);
+        }
+
+        MissionResolution resolution = missionControl.resolveMission();
+        if (!resolution.isResolved()) {
+            return resolution;
+        }
+
+        if (resolution.isSuccess() && resolution.getResourceReward() > 0) {
+            addResources(resolution.getResourceReward());
+            resolution.addEvent(new MissionEvent(MissionEvent.TYPE_REWARD, "Colony Reward",
+                    "The colony gained " + resolution.getResourceReward() + " resources."));
+        }
+
+        resolution.addEvent(new MissionEvent(MissionEvent.TYPE_INFO, "Day Advanced",
+                advanceDay(resolution.isSuccess()
+                        ? "A mission concluded in the colony's favor."
+                        : "The mission attempt ended without defeating the threat.")));
+
+        if (gameOver) {
+            resolution.addEvent(new MissionEvent(MissionEvent.TYPE_OUTCOME, "Colony Lost",
+                    gameOverReason));
+        }
+
+        return resolution;
+    }
+
+    /**
+     * Requests a supply drop and spends a day to receive it.
+     *
+     * @return user-facing supply drop result
+     */
+    public String requestSupplyDrop() {
+        if (gameOver) {
+            return gameOverReason;
+        }
+        if (missionControl.hasActiveMission()) {
+            return "Resolve or cancel the active mission before requesting a supply drop.";
+        }
+
+        int resourceGain = 30 + random.nextInt(31) + (currentDay * 3);
+        addResources(resourceGain);
+        return advanceDay("A supply drop delivered +" + resourceGain + " resources.");
+    }
+
+    /**
+     * Ensures one colony threat always exists unless the game has already ended.
+     *
+     * @return active threat, or {@code null} after game over
+     */
+    public Threat ensureThreatReady() {
+        if (gameOver) {
+            return missionControl.getCurrentThreat();
+        }
+        return missionControl.ensureActiveThreat(currentDay);
+    }
+
+    /**
+     * Marks the colony as defeated.
+     *
+     * @param reason visible game-over reason
+     */
+    public void triggerGameOver(@NonNull String reason) {
+        gameOver = true;
+        gameOverReason = reason;
+        updateGameOverUi();
+    }
+
+    /**
+     * Opens an auxiliary fragment from the Home screen.
+     *
+     * @param fragment destination fragment
+     */
+    public void openAuxiliaryFragment(@NonNull Fragment fragment) {
+        if (gameOver) {
+            showGameOverScreenIfNeeded();
+            return;
+        }
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .addToBackStack(null)
+                .commit();
+    }
+
+    /**
+     * Opens the full-screen colony loss UI when needed.
+     */
+    public void showGameOverScreenIfNeeded() {
+        updateGameOverUi();
+        if (!gameOver) {
+            return;
+        }
+
+        clearFragmentBackStack();
+        Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+        if (currentFragment instanceof GameOverFragment) {
+            return;
+        }
+
+        showPrimaryFragment(new GameOverFragment());
+    }
+
+    /**
+     * Stores a manual save snapshot that can be restored later from Settings or the game-over
+     * screen.
+     *
+     * @return user-facing save result
+     */
+    @NonNull
+    public String createManualSave() {
+        saveGameToSlot(MANUAL_SAVE_PREFIX);
+        return "Manual save stored for Day " + currentDay + ".";
+    }
+
+    /**
+     * Restores the manual save slot when it exists.
+     *
+     * @return user-facing load result
+     */
+    @NonNull
+    public String loadManualSave() {
+        if (!loadGameFromSlot(MANUAL_SAVE_PREFIX)) {
+            return "No manual save was found yet.";
+        }
+
+        if (!gameOver) {
+            ensureThreatReady();
+            saveGame();
+            showHomeScreen();
+            return "Manual save loaded. Colony restored to Day " + currentDay + ".";
+        }
+
+        saveGame();
+        showGameOverScreenIfNeeded();
+        return "Manual save loaded, but that save was already in a collapsed state.";
+    }
+
+    /**
+     * Starts a fresh colony run and returns the user to Home.
+     *
+     * @return user-facing reset result
+     */
+    @NonNull
+    public String resetColony() {
+        resetRuntimeState();
+        ensureThreatReady();
+        saveGame();
+        showHomeScreen();
+        return "The colony has been reset to a fresh start.";
+    }
+
+    /**
+     * @return whether a manual save slot currently exists
+     */
+    public boolean hasManualSave() {
+        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        return sharedPreferences.getBoolean(MANUAL_SAVE_PREFIX + KEY_SAVE_PRESENT, false);
     }
 
     /**
      * @return colony crew storage
      */
-    public Storage getStorage() { return storage; }
+    public Storage getStorage() {
+        return storage;
+    }
 
     /**
      * @return quarters manager
      */
-    public Quarters getQuarters() { return quarters; }
+    public Quarters getQuarters() {
+        return quarters;
+    }
 
     /**
      * @return simulator manager
      */
-    public Simulator getSimulator() { return simulator; }
+    public Simulator getSimulator() {
+        return simulator;
+    }
 
     /**
-     * @return mission control manager
+     * @return mission manager
      */
-    public MissionControl getMissionControl() { return missionControl; }
+    public MissionControl getMissionControl() {
+        return missionControl;
+    }
 
     /**
      * @return colony statistics manager
      */
-    public StatisticsManager getStatisticsManager() { return statisticsManager; }
+    public StatisticsManager getStatisticsManager() {
+        return statisticsManager;
+    }
+
+    /**
+     * @return menu music manager
+     */
+    public MusicManager getMusicManager() {
+        return musicManager;
+    }
 
     /**
      * @return current colony resource total
      */
-    public int getColonyResources() { return colonyResources; }
+    public int getColonyResources() {
+        return colonyResources;
+    }
 
     /**
      * @return current in-game day
      */
-    public int getCurrentDay() { return currentDay; }
+    public int getCurrentDay() {
+        return currentDay;
+    }
+
+    /**
+     * @return whether the colony has already been defeated
+     */
+    public boolean isGameOver() {
+        return gameOver;
+    }
+
+    /**
+     * @return visible game-over reason
+     */
+    public String getGameOverReason() {
+        return gameOverReason;
+    }
 
     /**
      * Spends a fixed amount of colony resources.
@@ -177,13 +582,77 @@ public class MainActivity extends AppCompatActivity {
      * @param amount amount to subtract
      */
     public void spendResources(int amount) {
-        this.colonyResources -= amount;
+        colonyResources = Math.max(0, colonyResources - amount);
     }
 
     /**
-     * Advances the in-game day counter by one.
+     * Adds a fixed amount of colony resources.
+     *
+     * @param amount amount to add
      */
-    public void incrementDay() {
-        this.currentDay++;
+    public void addResources(int amount) {
+        colonyResources += Math.max(0, amount);
+    }
+
+    /**
+     * Recreates all mutable runtime state to its starting values.
+     */
+    private void resetRuntimeState() {
+        storage = new Storage();
+        quarters = new Quarters();
+        simulator = new Simulator();
+        statisticsManager = new StatisticsManager();
+        missionControl = new MissionControl(storage, statisticsManager);
+        saveLoadManager = new SaveLoadManager();
+        random = new Random();
+        colonyResources = 150;
+        currentDay = 1;
+        gameOver = false;
+        gameOverReason = "";
+        updateGameOverUi();
+    }
+
+    /**
+     * Replaces the main content fragment without adding a back-stack entry.
+     *
+     * @param fragment fragment to show
+     */
+    private void showPrimaryFragment(@NonNull Fragment fragment) {
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .commit();
+    }
+
+    /**
+     * Removes any stacked auxiliary fragments before a hard navigation change.
+     */
+    private void clearFragmentBackStack() {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        if (fragmentManager.getBackStackEntryCount() > 0) {
+            fragmentManager.popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        }
+    }
+
+    /**
+     * Updates bottom-navigation visibility and back navigation rules to match the current
+     * colony state.
+     */
+    private void updateGameOverUi() {
+        gameOverBackCallback.setEnabled(gameOver);
+        if (bottomNav != null) {
+            bottomNav.setVisibility(gameOver ? View.GONE : View.VISIBLE);
+        }
+    }
+
+    /**
+     * Returns to the Home screen and restores bottom navigation after resets or manual loads.
+     */
+    private void showHomeScreen() {
+        updateGameOverUi();
+        clearFragmentBackStack();
+        showPrimaryFragment(new HomeFragment());
+        if (bottomNav != null) {
+            bottomNav.getMenu().findItem(R.id.nav_home).setChecked(true);
+        }
     }
 }

@@ -22,6 +22,6 @@ public class Soldier extends CrewMember {
      */
     @Override
     public int act() {
-        return getSkill() + 2 + (getExperience() / 100) + (int) (Math.random() * 3);
+        return getEffectiveSkill() + 2 + (int) (Math.random() * 3);
     }
 }

@@ -57,6 +57,13 @@
                     android:textColor="#8892B0"
                     android:textSize="11sp" />
 
+                <TextView
+                    android:id="@+id/tv_item_progress"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="#FFD166"
+                    android:textSize="11sp" />
             </LinearLayout>
 
             <LinearLayout
@@ -80,7 +87,6 @@
                     android:layout_marginTop="4dp"
                     android:max="100"
                     android:progressTint="#4CAF50" />
-
             </LinearLayout>
 
         </LinearLayout>
@@ -98,6 +104,7 @@
                 android:layout_marginEnd="4dp"
                 android:layout_weight="1"
                 android:backgroundTint="#2196F3"
+                android:textColor="#FFFFFF"
                 android:textSize="11sp"
                 android:visibility="gone" />
 
@@ -108,6 +115,7 @@
                 android:layout_marginEnd="4dp"
                 android:layout_weight="1"
                 android:backgroundTint="#FF9800"
+                android:textColor="#FFFFFF"
                 android:textSize="11sp"
                 android:visibility="gone" />
 
@@ -117,11 +125,11 @@
                 android:layout_height="34dp"
                 android:layout_weight="1"
                 android:backgroundTint="#4CAF50"
+                android:textColor="#FFFFFF"
                 android:textSize="11sp"
                 android:visibility="gone" />
 
         </LinearLayout>
 
     </LinearLayout>
-
 </androidx.cardview.widget.CardView>

@@ -1,6 +1,7 @@
 package com.example.project;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
@@ -107,6 +108,29 @@ public class Storage {
         CrewMember member = crewMap.get(id);
         if (member != null && !member.isInjured()) {
             member.setLocation(location);
+        }
+    }
+
+    /**
+     * Applies one day of Quarters recovery to the whole colony.
+     */
+    public void advanceRecoveryDay() {
+        for (CrewMember member : crewMap.values()) {
+            member.advanceRecoveryDay();
+        }
+    }
+
+    /**
+     * Decrements mission penalty counters after a mission resolves, skipping newly penalized crew.
+     *
+     * @param excludedIds crew ids whose penalties should not tick down yet
+     */
+    public void decrementMissionPenaltiesExcluding(Collection<Integer> excludedIds) {
+        for (CrewMember member : crewMap.values()) {
+            if (excludedIds != null && excludedIds.contains(member.getId())) {
+                continue;
+            }
+            member.consumeMissionPenalty();
         }
     }
 }

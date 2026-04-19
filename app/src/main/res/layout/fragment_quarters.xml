@@ -9,24 +9,34 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
         android:text="CREW QUARTERS"
         android:textColor="#FFFFFF"
         android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="12dp"/>
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:text="Manage resting crew, stage specialists for missions, and spend a day on full-colony recovery."
+        android:textColor="#8892B0"
+        android:textSize="12sp" />
 
     <Button
         android:id="@+id/btn_rest_all"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="REST ALL CREW (Full Restore)"
+        android:layout_marginBottom="16dp"
         android:backgroundTint="#2196F3"
-        android:layout_marginBottom="16dp"/>
+        android:text="REST ALL CREW (ADVANCE DAY)"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_quarters_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:nestedScrollingEnabled="false"/>
+        android:nestedScrollingEnabled="false" />
 
 </LinearLayout>

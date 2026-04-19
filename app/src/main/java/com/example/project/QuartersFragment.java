@@ -5,83 +5,80 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Fragment that displays the Quarters crew roster and crew management actions.
- * <p>
- * Crew members in Quarters can rest, move to the Simulator, or move to Mission Control.
+ * Fragment that displays the Quarters roster and crew management actions.
  */
 public class QuartersFragment extends Fragment {
+
     private MainActivity mainActivity;
     private CrewAdapter adapter;
-    private List<CrewMember> allCrew;
 
-    /**
-     * Inflates the Quarters screen layout.
-     *
-     * @param inflater layout inflater
-     * @param container parent container
-     * @param savedInstanceState saved instance state, if any
-     * @return inflated fragment view
-     */
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_quarters, container, false);
     }
 
-    /**
-     * Sets up the RecyclerView and wires crew management actions.
-     *
-     * @param view created fragment view
-     * @param savedInstanceState saved instance state, if any
-     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         mainActivity = (MainActivity) getActivity();
 
-        RecyclerView rv = view.findViewById(R.id.rv_quarters_list);
-        rv.setLayoutManager(new LinearLayoutManager(getContext()));
+        RecyclerView recyclerView = view.findViewById(R.id.rv_quarters_list);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        allCrew = mainActivity.getStorage().getCrewByLocation("Quarters");
-        adapter = new CrewAdapter(allCrew, (member, action) -> {
+        adapter = new CrewAdapter(getDisplayedCrew(), (member, action) -> {
+            if (mainActivity.isGameOver()) {
+                Toast.makeText(getContext(), mainActivity.getGameOverReason(), Toast.LENGTH_LONG).show();
+                return;
+            }
+
             switch (action) {
                 case "simulator":
-                    mainActivity.getStorage().moveCrewMember(member.getId(), "Simulator");
-                    Toast.makeText(getContext(), member.getName() + " moved to Simulator", Toast.LENGTH_SHORT).show();
+                    mainActivity.getStorage().moveCrewMember(member.getId(), CrewMember.LOCATION_SIMULATOR);
+                    Toast.makeText(getContext(), member.getName() + " moved to the Simulator.",
+                            Toast.LENGTH_SHORT).show();
                     break;
-                case "mission":
-                    mainActivity.getStorage().moveCrewMember(member.getId(), "MissionControl");
-                    Toast.makeText(getContext(), member.getName() + " moved to Mission Control", Toast.LENGTH_SHORT).show();
+                case "ready":
+                    mainActivity.getStorage().moveCrewMember(member.getId(), CrewMember.LOCATION_MISSION_READY);
+                    Toast.makeText(getContext(), member.getName() + " moved to Mission Ready.",
+                            Toast.LENGTH_SHORT).show();
+                    break;
+                case "quarters":
+                    mainActivity.getStorage().moveCrewMember(member.getId(), CrewMember.LOCATION_QUARTERS);
+                    Toast.makeText(getContext(), member.getName() + " returned to Quarters.",
+                            Toast.LENGTH_SHORT).show();
                     break;
                 case "rest":
                     mainActivity.getQuarters().restCrew(member);
-                    Toast.makeText(getContext(), member.getName() + " is fully rested!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), member.getName() + " recovered in Quarters.",
+                            Toast.LENGTH_SHORT).show();
                     break;
                 default:
                     break;
             }
             refreshList();
         });
-        rv.setAdapter(adapter);
+        recyclerView.setAdapter(adapter);
 
         view.findViewById(R.id.btn_rest_all).setOnClickListener(v -> {
-            mainActivity.getQuarters().restAll(mainActivity.getStorage());
+            Toast.makeText(getContext(), mainActivity.restAllCrew(), Toast.LENGTH_LONG).show();
             refreshList();
-            Toast.makeText(getContext(), "All crew in Quarters fully rested!", Toast.LENGTH_SHORT).show();
+            mainActivity.showGameOverScreenIfNeeded();
         });
     }
 
-    /**
-     * Refreshes the displayed Quarters roster when returning to the fragment.
-     */
     @Override
     public void onResume() {
         super.onResume();
@@ -89,10 +86,25 @@ public class QuartersFragment extends Fragment {
     }
 
     /**
-     * Reloads the Quarters crew list from storage and updates the adapter.
+     * Reloads the crew list from Quarters and Mission Ready staging.
      */
     private void refreshList() {
-        allCrew = mainActivity.getStorage().getCrewByLocation("Quarters");
-        adapter.updateList(allCrew);
+        if (adapter != null) {
+            adapter.updateList(getDisplayedCrew());
+        }
+    }
+
+    /**
+     * Builds the roster shown in the Quarters UI.
+     */
+    private List<CrewMember> getDisplayedCrew() {
+        List<CrewMember> displayedCrew = new ArrayList<>();
+        for (CrewMember member : mainActivity.getStorage().getAllCrew()) {
+            if (CrewMember.LOCATION_QUARTERS.equals(member.getLocation())
+                    || CrewMember.LOCATION_MISSION_READY.equals(member.getLocation())) {
+                displayedCrew.add(member);
+            }
+        }
+        return displayedCrew;
     }
 }

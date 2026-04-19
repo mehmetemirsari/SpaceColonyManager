@@ -1,17 +1,17 @@
 package com.example.project;
 
 import org.junit.Test;
+
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
  * Unit tests covering the most important game system rules.
- * <p>
- * These tests focus on storage limits, training behavior, Quarters recovery scope, mission-level
- * statistics, and location filtering.
  */
 public class GameSystemsTest {
 
@@ -33,73 +33,213 @@ public class GameSystemsTest {
     }
 
     /**
-     * Verifies that valid simulator training grants experience and consumes energy.
+     * Verifies that valid simulator training grants XP and consumes HP.
      */
     @Test
     public void simulator_training_addsExperienceAndCostsEnergy() {
         CrewMember pilot = new Pilot(1, "Nova");
-        pilot.setLocation("Simulator");
+        pilot.setLocation(CrewMember.LOCATION_SIMULATOR);
         int startEnergy = pilot.getCurrentEnergy();
 
         Simulator simulator = new Simulator();
         boolean trained = simulator.trainCrew(pilot);
 
         assertTrue(trained);
-        assertEquals(50, pilot.getExperience());
+        assertEquals(25, pilot.getExperience());
         assertEquals(startEnergy - 10, pilot.getCurrentEnergy());
     }
 
     /**
-     * Verifies that Quarters bulk rest only affects crew members currently in Quarters.
+     * Verifies that level thresholds increase both damage and maximum HP.
      */
     @Test
-    public void quarters_restAll_onlyAffectsQuartersCrew() {
-        Storage storage = new Storage();
-        CrewMember quartersCrew = new Pilot(1, "A");
-        CrewMember simulatorCrew = new Engineer(2, "B");
+    public void crew_levelsIncreaseDamageAndHp() {
+        CrewMember pilot = new Pilot(1, "Nova");
 
-        quartersCrew.setCurrentEnergy(5);
-        simulatorCrew.setCurrentEnergy(5);
-        simulatorCrew.setLocation("Simulator");
+        assertEquals(1, pilot.getLevel());
+        assertEquals(5, pilot.getSkill());
+        assertEquals(20, pilot.getMaxEnergy());
 
-        storage.addCrewMember(quartersCrew);
-        storage.addCrewMember(simulatorCrew);
+        pilot.gainExperience(100);
 
-        Quarters quarters = new Quarters();
-        quarters.restAll(storage);
-
-        assertEquals(quartersCrew.getMaxEnergy(), quartersCrew.getCurrentEnergy());
-        assertEquals(5, simulatorCrew.getCurrentEnergy());
+        assertEquals(2, pilot.getLevel());
+        assertEquals(6, pilot.getSkill());
+        assertEquals(22, pilot.getMaxEnergy());
+        assertEquals(22, pilot.getCurrentEnergy());
     }
 
     /**
-     * Verifies that mission statistics are counted once per mission and that successful missions
-     * reward crew experience.
+     * Verifies that the save/load layer preserves progression and penalty fields.
      */
     @Test
-    public void missionControl_recordsMissionLevelStatsAndRewardsCrew() {
+    public void saveLoad_roundTripPreservesProgressionState() {
+        Storage storage = new Storage();
+        Pilot pilot = new Pilot(1, "Nova");
+        pilot.gainExperience(150);
+        pilot.setCurrentEnergy(12);
+        pilot.setMissionPenaltyRemaining(1);
+        pilot.setLocation(CrewMember.LOCATION_QUARTERS);
+        storage.addCrewMember(pilot);
+
+        SaveLoadManager saveLoadManager = new SaveLoadManager();
+        String json = saveLoadManager.createJsonFromStorage(storage);
+        List<CrewMember> restored = saveLoadManager.loadStorageFromJson(json);
+
+        assertEquals(1, restored.size());
+        CrewMember loaded = restored.get(0);
+        assertEquals(150, loaded.getExperience());
+        assertEquals(2, loaded.getLevel());
+        assertEquals(12, loaded.getCurrentEnergy());
+        assertEquals(1, loaded.getMissionPenaltyRemaining());
+        assertEquals(CrewMember.LOCATION_QUARTERS, loaded.getLocation());
+    }
+
+    /**
+     * Verifies that successful missions reward XP, resources, and clear the active threat.
+     */
+    @Test
+    public void missionControl_successRewardsCrewAndClearsThreat() {
         Storage storage = new Storage();
         StatisticsManager statisticsManager = new StatisticsManager();
         MissionControl missionControl = new MissionControl(storage, statisticsManager);
 
-        CrewMember a = new Soldier(1, "Atlas");
-        CrewMember b = new Scientist(2, "Vera");
-        storage.addCrewMember(a);
-        storage.addCrewMember(b);
+        CrewMember alpha = new OverpoweredCrew(1, "Atlas");
+        CrewMember beta = new OverpoweredCrew(2, "Vera");
+        alpha.setLocation(CrewMember.LOCATION_MISSION_READY);
+        beta.setLocation(CrewMember.LOCATION_MISSION_READY);
+        storage.addCrewMember(alpha);
+        storage.addCrewMember(beta);
 
-        String launch = missionControl.launchMission(a, b);
-        assertTrue(launch.contains("Mission started!"));
+        missionControl.setCurrentThreat(new Threat("Test Drone", Threat.CATEGORY_TECHNICAL,
+                "Stabilization", 4, 1, 12, 45, 100, 1, 3));
 
-        String result = missionControl.resolveMission();
+        String launch = missionControl.launchMission(alpha, beta, 1);
+        assertTrue(launch.contains("Mission launched"));
 
-        assertEquals(1, statisticsManager.getTotalMissions());
-        assertTrue(result.contains("MISSION COMPLETE") || result.contains("MISSION FAILED"));
+        MissionResolution resolution = missionControl.resolveMission();
 
-        if (result.contains("MISSION COMPLETE")) {
-            assertEquals(100, a.getExperience());
-            assertEquals(100, b.getExperience());
-            assertEquals(1, statisticsManager.getTotalWins());
+        assertTrue(resolution.isResolved());
+        assertTrue(resolution.isSuccess());
+        assertEquals(45, resolution.getResourceReward());
+        assertEquals(100, alpha.getExperience());
+        assertEquals(100, beta.getExperience());
+        assertNull(missionControl.getCurrentThreat());
+        assertEquals(1, statisticsManager.getTotalWins());
+        assertEquals(1, missionControl.getCompletedMissions());
+    }
+
+    /**
+     * Verifies that failed missions preserve the threat and knock crew back to Quarters with a penalty.
+     */
+    @Test
+    public void missionControl_failureLeavesThreatActiveAndAppliesPenalty() {
+        Storage storage = new Storage();
+        StatisticsManager statisticsManager = new StatisticsManager();
+        MissionControl missionControl = new MissionControl(storage, statisticsManager);
+
+        CrewMember alpha = new WeakCrew(1, "A");
+        CrewMember beta = new WeakCrew(2, "B");
+        alpha.setLocation(CrewMember.LOCATION_MISSION_READY);
+        beta.setLocation(CrewMember.LOCATION_MISSION_READY);
+        storage.addCrewMember(alpha);
+        storage.addCrewMember(beta);
+
+        missionControl.setCurrentThreat(new Threat("Titan", Threat.CATEGORY_COMBAT,
+                "Defense", 12, 3, 40, 60, 100, 1, 3));
+
+        missionControl.launchMission(alpha, beta, 1);
+        MissionResolution resolution = missionControl.resolveMission();
+
+        assertTrue(resolution.isResolved());
+        assertFalse(resolution.isSuccess());
+        assertNotNull(missionControl.getCurrentThreat());
+        assertEquals(50, alpha.getExperience());
+        assertEquals(50, beta.getExperience());
+        assertEquals(CrewMember.LOCATION_QUARTERS, alpha.getLocation());
+        assertEquals(1, alpha.getMissionPenaltyRemaining());
+        assertTrue(alpha.isInjured());
+    }
+
+    /**
+     * Verifies that mission penalties expire after the next resolved mission.
+     */
+    @Test
+    public void missionPenaltyTicksDownAfterNextResolvedMission() {
+        Storage storage = new Storage();
+        StatisticsManager statisticsManager = new StatisticsManager();
+        MissionControl missionControl = new MissionControl(storage, statisticsManager);
+
+        CrewMember penalized = new Pilot(1, "Nova");
+        penalized.assignMissionPenalty(1);
+        penalized.setLocation(CrewMember.LOCATION_QUARTERS);
+        storage.addCrewMember(penalized);
+
+        CrewMember alpha = new OverpoweredCrew(2, "Atlas");
+        CrewMember beta = new OverpoweredCrew(3, "Vera");
+        alpha.setLocation(CrewMember.LOCATION_MISSION_READY);
+        beta.setLocation(CrewMember.LOCATION_MISSION_READY);
+        storage.addCrewMember(alpha);
+        storage.addCrewMember(beta);
+
+        missionControl.setCurrentThreat(new Threat("Scout", Threat.CATEGORY_FLYING,
+                "Interception", 4, 1, 10, 40, 100, 1, 3));
+        missionControl.launchMission(alpha, beta, 1);
+        missionControl.resolveMission();
+
+        assertEquals(0, penalized.getMissionPenaltyRemaining());
+    }
+
+    /**
+     * Verifies that later days create stronger variants of the same template threat.
+     */
+    @Test
+    public void threatScalingByDayIncreasesThreatPower() {
+        Storage storage = new Storage();
+        StatisticsManager statisticsManager = new StatisticsManager();
+        MissionControl missionControl = new MissionControl(storage, statisticsManager);
+
+        missionControl.setRandomSeed(7L);
+        Threat dayOneThreat = missionControl.generateThreat(1);
+        missionControl.setRandomSeed(7L);
+        Threat dayFiveThreat = missionControl.generateThreat(5);
+
+        assertEquals(dayOneThreat.getName(), dayFiveThreat.getName());
+        assertTrue(dayFiveThreat.getSkill() > dayOneThreat.getSkill());
+        assertTrue(dayFiveThreat.getMaxEnergy() > dayOneThreat.getMaxEnergy());
+        assertEquals(5, dayOneThreat.getDeadlineDay());
+        assertEquals(9, dayFiveThreat.getDeadlineDay());
+        assertTrue(dayFiveThreat.isOverdue(10));
+    }
+
+    /**
+     * Verifies that pair bonuses are emitted into the replay log.
+     */
+    @Test
+    public void missionResolution_logsCompositionBonuses() {
+        Storage storage = new Storage();
+        StatisticsManager statisticsManager = new StatisticsManager();
+        MissionControl missionControl = new MissionControl(storage, statisticsManager);
+
+        CrewMember pilot = new Pilot(1, "Nova");
+        CrewMember engineer = new Engineer(2, "Bolt");
+        pilot.setLocation(CrewMember.LOCATION_MISSION_READY);
+        engineer.setLocation(CrewMember.LOCATION_MISSION_READY);
+        storage.addCrewMember(pilot);
+        storage.addCrewMember(engineer);
+
+        missionControl.setCurrentThreat(new Threat("Skyrender", Threat.CATEGORY_FLYING,
+                "Interception", 5, 1, 14, 50, 100, 1, 3));
+        missionControl.launchMission(pilot, engineer, 1);
+        MissionResolution resolution = missionControl.resolveMission();
+
+        boolean foundBonus = false;
+        for (MissionEvent event : resolution.getEvents()) {
+            if ("Composition Bonus".equals(event.getTitle())) {
+                foundBonus = true;
+                break;
+            }
         }
+        assertTrue(foundBonus);
     }
 
     /**
@@ -108,19 +248,49 @@ public class GameSystemsTest {
     @Test
     public void storage_filtersCrewByLocation() {
         Storage storage = new Storage();
-        CrewMember a = new Pilot(1, "A");
-        CrewMember b = new Engineer(2, "B");
-        b.setLocation("Simulator");
+        CrewMember quartersCrew = new Pilot(1, "A");
+        CrewMember simulatorCrew = new Engineer(2, "B");
+        simulatorCrew.setLocation(CrewMember.LOCATION_SIMULATOR);
 
-        storage.addCrewMember(a);
-        storage.addCrewMember(b);
+        storage.addCrewMember(quartersCrew);
+        storage.addCrewMember(simulatorCrew);
 
-        List<CrewMember> quartersCrew = storage.getCrewByLocation("Quarters");
-        List<CrewMember> simulatorCrew = storage.getCrewByLocation("Simulator");
+        List<CrewMember> quarters = storage.getCrewByLocation(CrewMember.LOCATION_QUARTERS);
+        List<CrewMember> simulator = storage.getCrewByLocation(CrewMember.LOCATION_SIMULATOR);
 
-        assertEquals(1, quartersCrew.size());
-        assertEquals("A", quartersCrew.get(0).getName());
-        assertEquals(1, simulatorCrew.size());
-        assertEquals("B", simulatorCrew.get(0).getName());
+        assertEquals(1, quarters.size());
+        assertEquals("A", quarters.get(0).getName());
+        assertEquals(1, simulator.size());
+        assertEquals("B", simulator.get(0).getName());
+    }
+
+    /**
+     * Strong deterministic test specialist used for mission success cases.
+     */
+    private static class OverpoweredCrew extends CrewMember {
+
+        OverpoweredCrew(int id, String name) {
+            super(id, name, 18, 5, 28, "Pilot");
+        }
+
+        @Override
+        public int act() {
+            return 22;
+        }
+    }
+
+    /**
+     * Weak deterministic test specialist used for mission failure cases.
+     */
+    private static class WeakCrew extends CrewMember {
+
+        WeakCrew(int id, String name) {
+            super(id, name, 1, 0, 6, "Scientist");
+        }
+
+        @Override
+        public int act() {
+            return 1;
+        }
     }
 }

@@ -17,7 +17,11 @@ public class Quarters {
      */
     public void restCrew(CrewMember member) {
         if (member != null) {
-            member.restoreEnergy();
+            if (member.isInjured()) {
+                member.advanceRecoveryDay();
+            } else {
+                member.restoreEnergy();
+            }
             member.setLocation("Quarters");
         }
     }
@@ -29,7 +33,7 @@ public class Quarters {
      */
     public void recoverCrew(CrewMember member) {
         if (member != null && "Quarters".equals(member.getLocation())) {
-            member.recover();
+            member.advanceRecoveryDay();
         }
     }
 
@@ -41,8 +45,13 @@ public class Quarters {
     public void restAll(Storage storage) {
         List<CrewMember> quartersCrew = storage.getCrewByLocation("Quarters");
         for (CrewMember member : quartersCrew) {
-            member.restoreEnergy();
-            member.setLocation("Quarters");
+            if (member.isInjured()) {
+                member.advanceRecoveryDay();
+                member.advanceRecoveryDay();
+            } else {
+                member.restoreEnergy();
+            }
+            member.setLocation(CrewMember.LOCATION_QUARTERS);
         }
     }
 }

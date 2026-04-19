@@ -22,7 +22,7 @@ public class Engineer extends CrewMember {
      */
     @Override
     public int act() {
-        return getSkill() + (getExperience() / 100) + (int) (Math.random() * 3);
+        return getEffectiveSkill() + (int) (Math.random() * 3);
     }
 
     /**
@@ -32,7 +32,7 @@ public class Engineer extends CrewMember {
      * @return attack value including a bonus against Technical threats
      */
     public int act(Threat threat) {
-        int bonus = threat.getThreatType().equals("Technical") ? 2 : 0;
-        return getSkill() + bonus + (getExperience() / 100) + (int) (Math.random() * 3);
+        int bonus = Threat.CATEGORY_TECHNICAL.equals(threat.getCategory()) ? 3 : 0;
+        return getEffectiveSkill() + bonus + (int) (Math.random() * 3);
     }
 }

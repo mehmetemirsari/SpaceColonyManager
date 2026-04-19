@@ -5,17 +5,20 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Basic host-side unit test for the project test configuration.
- * <p>
- * This file remains intentionally simple and mainly verifies that the unit test source set is wired correctly.
+ * Small host-side test that validates the new level progression helper methods.
  */
 public class ExampleUnitTest {
 
     /**
-     * Confirms the sample arithmetic assertion used to validate local unit test execution.
+     * Confirms XP progress helpers match the configured 100 XP level band.
      */
     @Test
-    public void addition_isCorrect() {
-        assertEquals(4, 2 + 2);
+    public void xpProgressionHelpers_areConsistent() {
+        CrewMember pilot = new Pilot(1, "Nova");
+        pilot.gainExperience(175);
+
+        assertEquals(2, pilot.getLevel());
+        assertEquals(75, pilot.getXpIntoCurrentLevel());
+        assertEquals(25, pilot.getXpNeededForNextLevel());
     }
 }

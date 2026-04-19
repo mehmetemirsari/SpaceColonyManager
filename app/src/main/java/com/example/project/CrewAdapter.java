@@ -7,15 +7,14 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import java.util.List;
 
 /**
  * RecyclerView adapter used to render crew member cards across multiple screens.
- * <p>
- * The adapter can operate in a read-only mode or an interactive mode depending on whether a
- * {@link CrewActionListener} is supplied.
  */
 public class CrewAdapter extends RecyclerView.Adapter<CrewAdapter.CrewViewHolder> {
 
@@ -27,13 +26,13 @@ public class CrewAdapter extends RecyclerView.Adapter<CrewAdapter.CrewViewHolder
          * Called when an action button is pressed for a crew member.
          *
          * @param member target crew member
-         * @param action string action key such as {@code train}, {@code rest}, or {@code simulator}
+         * @param action string action key such as {@code train}, {@code rest}, or {@code ready}
          */
         void onAction(CrewMember member, String action);
     }
 
     private List<CrewMember> crewList;
-    private CrewActionListener listener;
+    private final CrewActionListener listener;
 
     /**
      * Creates a new adapter for a crew list.
@@ -56,13 +55,6 @@ public class CrewAdapter extends RecyclerView.Adapter<CrewAdapter.CrewViewHolder
         notifyDataSetChanged();
     }
 
-    /**
-     * Inflates a crew card view holder.
-     *
-     * @param parent parent view group
-     * @param viewType adapter view type
-     * @return new crew card view holder
-     */
     @NonNull
     @Override
     public CrewViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -70,23 +62,19 @@ public class CrewAdapter extends RecyclerView.Adapter<CrewAdapter.CrewViewHolder
         return new CrewViewHolder(view);
     }
 
-    /**
-     * Binds a crew member to a card view and configures context-sensitive action buttons.
-     *
-     * @param holder destination view holder
-     * @param position adapter position being bound
-     */
     @Override
     public void onBindViewHolder(@NonNull CrewViewHolder holder, int position) {
         CrewMember member = crewList.get(position);
 
         holder.tvName.setText(member.getName());
-        holder.tvSpec.setText(member.getSpecialization() + " — Lv." + member.getLevel() + " — EXP: " + member.getExperience());
-        holder.tvLocation.setText(member.getLocation() + (member.isInjured() ? " [INJURED]" : ""));
+        holder.tvSpec.setText(member.getSpecialization() + " | Lv." + member.getLevel()
+                + " | XP " + member.getExperience());
+        holder.tvLocation.setText(getLocationLabel(member));
+        holder.tvProgress.setText("ATK " + member.getSkill() + " | Next level in "
+                + member.getXpNeededForNextLevel() + " XP");
         holder.pbEnergy.setMax(member.getMaxEnergy());
         holder.pbEnergy.setProgress(member.getCurrentEnergy());
-        holder.tvEnergy.setText("Energy: " + member.getCurrentEnergy() + "/" + member.getMaxEnergy());
-
+        holder.tvEnergy.setText("HP " + member.getCurrentEnergy() + "/" + member.getMaxEnergy());
         holder.ivAvatar.setImageResource(getAvatarResource(member.getSpecialization()));
 
         if (listener == null) {
@@ -96,40 +84,29 @@ public class CrewAdapter extends RecyclerView.Adapter<CrewAdapter.CrewViewHolder
             return;
         }
 
-        String location = member.getLocation();
-        switch (location) {
-            case "Quarters":
-                holder.btnAction1.setVisibility(View.VISIBLE);
-                holder.btnAction1.setText("→ Simulator");
-                holder.btnAction1.setOnClickListener(v -> listener.onAction(member, "simulator"));
-
-                holder.btnAction2.setVisibility(View.VISIBLE);
-                holder.btnAction2.setText("→ Mission");
-                holder.btnAction2.setOnClickListener(v -> listener.onAction(member, "mission"));
-
-                holder.btnAction3.setVisibility(View.VISIBLE);
-                holder.btnAction3.setText(member.isInjured() ? "Recover" : "Rest");
-                holder.btnAction3.setOnClickListener(v -> listener.onAction(member, "rest"));
+        switch (member.getLocation()) {
+            case CrewMember.LOCATION_QUARTERS:
+                configureButton(holder.btnAction1, "To Simulator",
+                        v -> listener.onAction(member, "simulator"));
+                configureButton(holder.btnAction2, "Mission Prep",
+                        v -> listener.onAction(member, "ready"));
+                configureButton(holder.btnAction3, member.isInjured() ? "Recover" : "Rest",
+                        v -> listener.onAction(member, "rest"));
                 break;
 
-            case "Simulator":
-                holder.btnAction1.setVisibility(View.VISIBLE);
-                holder.btnAction1.setText("Train");
-                holder.btnAction1.setOnClickListener(v -> listener.onAction(member, "train"));
-
-                holder.btnAction2.setVisibility(View.VISIBLE);
-                holder.btnAction2.setText("→ Quarters");
-                holder.btnAction2.setOnClickListener(v -> listener.onAction(member, "quarters"));
-
+            case CrewMember.LOCATION_MISSION_READY:
+                configureButton(holder.btnAction1, "To Quarters",
+                        v -> listener.onAction(member, "quarters"));
+                configureButton(holder.btnAction2, "To Simulator",
+                        v -> listener.onAction(member, "simulator"));
                 holder.btnAction3.setVisibility(View.GONE);
                 break;
 
-            case "MissionControl":
-                holder.btnAction1.setVisibility(View.VISIBLE);
-                holder.btnAction1.setText("→ Quarters");
-                holder.btnAction1.setOnClickListener(v -> listener.onAction(member, "quarters"));
-
-                holder.btnAction2.setVisibility(View.GONE);
+            case CrewMember.LOCATION_SIMULATOR:
+                configureButton(holder.btnAction1, "Train",
+                        v -> listener.onAction(member, "train"));
+                configureButton(holder.btnAction2, "To Quarters",
+                        v -> listener.onAction(member, "quarters"));
                 holder.btnAction3.setVisibility(View.GONE);
                 break;
 
@@ -141,19 +118,44 @@ public class CrewAdapter extends RecyclerView.Adapter<CrewAdapter.CrewViewHolder
         }
     }
 
-    /**
-     * @return number of crew cards to display
-     */
     @Override
     public int getItemCount() {
         return crewList.size();
     }
 
     /**
+     * Configures one visible action button.
+     */
+    private void configureButton(Button button, String label, View.OnClickListener listener) {
+        button.setVisibility(View.VISIBLE);
+        button.setText(label);
+        button.setOnClickListener(listener);
+    }
+
+    /**
+     * Builds a readable location and status label for the UI.
+     */
+    private String getLocationLabel(CrewMember member) {
+        StringBuilder label = new StringBuilder();
+        if (CrewMember.LOCATION_MISSION_READY.equals(member.getLocation())) {
+            label.append("Mission Ready");
+        } else if (CrewMember.LOCATION_ON_MISSION.equals(member.getLocation())) {
+            label.append("On Mission");
+        } else {
+            label.append(member.getLocation());
+        }
+
+        if (member.isInjured()) {
+            label.append(" | Injured");
+        }
+        if (member.getMissionPenaltyRemaining() > 0) {
+            label.append(" | Penalty ").append(member.getMissionPenaltyRemaining());
+        }
+        return label.toString();
+    }
+
+    /**
      * Maps a specialization label to its avatar drawable resource.
-     *
-     * @param specialization specialization label
-     * @return drawable resource id for the avatar icon
      */
     private int getAvatarResource(String specialization) {
         switch (specialization) {
@@ -176,10 +178,16 @@ public class CrewAdapter extends RecyclerView.Adapter<CrewAdapter.CrewViewHolder
      * View holder for one crew card.
      */
     public static class CrewViewHolder extends RecyclerView.ViewHolder {
-        ImageView ivAvatar;
-        TextView tvName, tvSpec, tvLocation, tvEnergy;
-        ProgressBar pbEnergy;
-        Button btnAction1, btnAction2, btnAction3;
+        final ImageView ivAvatar;
+        final TextView tvName;
+        final TextView tvSpec;
+        final TextView tvLocation;
+        final TextView tvProgress;
+        final TextView tvEnergy;
+        final ProgressBar pbEnergy;
+        final Button btnAction1;
+        final Button btnAction2;
+        final Button btnAction3;
 
         /**
          * Finds and caches all card subviews.
@@ -192,6 +200,7 @@ public class CrewAdapter extends RecyclerView.Adapter<CrewAdapter.CrewViewHolder
             tvName = itemView.findViewById(R.id.tv_item_name);
             tvSpec = itemView.findViewById(R.id.tv_item_spec);
             tvLocation = itemView.findViewById(R.id.tv_item_location);
+            tvProgress = itemView.findViewById(R.id.tv_item_progress);
             tvEnergy = itemView.findViewById(R.id.tv_item_energy);
             pbEnergy = itemView.findViewById(R.id.pb_energy);
             btnAction1 = itemView.findViewById(R.id.btn_action1);

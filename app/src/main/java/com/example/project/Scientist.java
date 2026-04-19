@@ -22,6 +22,6 @@ public class Scientist extends CrewMember {
      */
     @Override
     public int act() {
-        return getSkill() + 1 + (getExperience() / 100) + (int) (Math.random() * 3);
+        return getEffectiveSkill() + 1 + (int) (Math.random() * 3);
     }
 }

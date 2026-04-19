@@ -22,8 +22,8 @@ public class Medic extends CrewMember {
      */
     @Override
     public int act() {
-        int healed = Math.min(5, getMaxEnergy() - getCurrentEnergy());
+        int healed = Math.min(4, getMaxEnergy() - getCurrentEnergy());
         setCurrentEnergy(getCurrentEnergy() + healed);
-        return getSkill() + (getExperience() / 100) + (int) (Math.random() * 3);
+        return getEffectiveSkill() + (int) (Math.random() * 3);
     }
 }

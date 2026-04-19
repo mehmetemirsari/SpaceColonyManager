@@ -1,123 +1,141 @@
 package com.example.project;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Fragment responsible for mission setup, tactical choices, mission cancellation, and resolution.
+ * Fragment responsible for mission setup, tactical choices, and mission replay playback.
  */
 public class MissionControlFragment extends Fragment {
 
     private MainActivity mainActivity;
-    private Spinner spinner1, spinner2, spinnerTactic1, spinnerTactic2;
-    private TextView tvThreatName, tvMissionLog;
-    private View btnLaunch, btnCancel, btnResolve;
-    private ScrollView scrollLog;
-    private List<CrewMember> availableCrew;
+    private Spinner spinnerCrew1;
+    private Spinner spinnerCrew2;
+    private Spinner spinnerTactic1;
+    private Spinner spinnerTactic2;
+    private TextView tvThreatName;
+    private TextView tvThreatDetails;
+    private View btnLaunch;
+    private View btnCancel;
+    private View btnResolve;
+    private RecyclerView rvMissionLog;
+    private MissionLogAdapter missionLogAdapter;
+    private final Handler replayHandler = new Handler(Looper.getMainLooper());
+    private List<CrewMember> availableCrew = new ArrayList<>();
 
-    /**
-     * Inflates the Mission Control screen layout.
-     */
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_mission_control, container, false);
     }
 
-    /**
-     * Binds views, loads available crew, restores any active mission state, and wires mission controls.
-     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         mainActivity = (MainActivity) getActivity();
 
-        spinner1 = view.findViewById(R.id.spinner_crew_1);
-        spinner2 = view.findViewById(R.id.spinner_crew_2);
+        spinnerCrew1 = view.findViewById(R.id.spinner_crew_1);
+        spinnerCrew2 = view.findViewById(R.id.spinner_crew_2);
         spinnerTactic1 = view.findViewById(R.id.spinner_tactic_1);
         spinnerTactic2 = view.findViewById(R.id.spinner_tactic_2);
         tvThreatName = view.findViewById(R.id.tv_threat_name);
-        tvMissionLog = view.findViewById(R.id.tv_mission_log);
+        tvThreatDetails = view.findViewById(R.id.tv_threat_details);
         btnLaunch = view.findViewById(R.id.btn_launch_mission);
         btnCancel = view.findViewById(R.id.btn_cancel_mission);
         btnResolve = view.findViewById(R.id.btn_resolve_mission);
-        scrollLog = view.findViewById(R.id.scroll_mission_log);
+        rvMissionLog = view.findViewById(R.id.rv_mission_log);
 
-        setupCrewSpinners();
+        rvMissionLog.setLayoutManager(new LinearLayoutManager(getContext()));
+        missionLogAdapter = new MissionLogAdapter();
+        rvMissionLog.setAdapter(missionLogAdapter);
+
         setupTacticSpinners();
-        refreshActiveMissionState();
+        setupCrewSpinners();
+        refreshThreatState();
         updateButtonStates();
 
         btnLaunch.setOnClickListener(v -> startMissionProcess());
         btnResolve.setOnClickListener(v -> resolveMissionProcess());
         btnCancel.setOnClickListener(v -> {
-            String result = mainActivity.getMissionControl().cancelMission();
-            tvMissionLog.setText(result);
-            tvThreatName.setText("No Active Threat");
+            missionLogAdapter.clear();
+            missionLogAdapter.addEvent(new MissionEvent(MissionEvent.TYPE_INFO, "Mission Cancelled",
+                    mainActivity.getMissionControl().cancelMission()));
+            refreshThreatState();
             setupCrewSpinners();
             updateButtonStates();
-            Toast.makeText(getContext(), "Mission cancelled.", Toast.LENGTH_SHORT).show();
         });
     }
 
-    /**
-     * Refreshes available crew and active mission state when the fragment becomes visible again.
-     */
     @Override
     public void onResume() {
         super.onResume();
         setupCrewSpinners();
-        refreshActiveMissionState();
+        refreshThreatState();
         updateButtonStates();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        replayHandler.removeCallbacksAndMessages(null);
     }
 
     /**
      * Populates the tactic spinners with Attack and Defend options.
      */
     private void setupTacticSpinners() {
-        String[] tactics = {"Attack", "Defend"};
-        ArrayAdapter<String> tacticAdapter = new ArrayAdapter<>(getContext(),
-                android.R.layout.simple_spinner_dropdown_item, tactics);
+        String[] tactics = {MissionControl.TACTIC_ATTACK, MissionControl.TACTIC_DEFEND};
+        ThemedSpinnerAdapter tacticAdapter = new ThemedSpinnerAdapter(requireContext(), tactics);
         spinnerTactic1.setAdapter(tacticAdapter);
         spinnerTactic2.setAdapter(tacticAdapter);
     }
 
     /**
-     * Populates the crew selection spinners with healthy crew members not already on a mission.
+     * Populates the crew selection spinners with mission-ready crew.
      */
     private void setupCrewSpinners() {
         availableCrew = new ArrayList<>();
-        for (CrewMember c : mainActivity.getStorage().getAllCrew()) {
-            if (!c.isInjured() && !"MissionControl".equals(c.getLocation())) {
-                availableCrew.add(c);
+        for (CrewMember crewMember : mainActivity.getStorage().getAllCrew()) {
+            if (CrewMember.LOCATION_MISSION_READY.equals(crewMember.getLocation())
+                    && crewMember.isAvailableForMission()) {
+                availableCrew.add(crewMember);
             }
         }
 
-        List<String> crewNames = new ArrayList<>();
-        for (CrewMember c : availableCrew) {
-            crewNames.add(c.getName() + " (" + c.getSpecialization() + ") — EXP: " + c.getExperience()
-                    + " | " + c.getCurrentEnergy() + "/" + c.getMaxEnergy() + " HP");
+        List<String> crewLabels = new ArrayList<>();
+        for (CrewMember crewMember : availableCrew) {
+            crewLabels.add(crewMember.getName() + " (" + crewMember.getSpecialization() + ")"
+                    + " | Lv." + crewMember.getLevel()
+                    + " | HP " + crewMember.getCurrentEnergy() + "/" + crewMember.getMaxEnergy());
         }
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(),
-                android.R.layout.simple_spinner_dropdown_item, crewNames);
-        spinner1.setAdapter(adapter);
-        spinner2.setAdapter(adapter);
+        if (crewLabels.isEmpty()) {
+            crewLabels = Collections.singletonList("No mission-ready crew");
+        }
 
+        ThemedSpinnerAdapter adapter = new ThemedSpinnerAdapter(requireContext(), crewLabels);
+        spinnerCrew1.setAdapter(adapter);
+        spinnerCrew2.setAdapter(adapter);
         if (availableCrew.size() >= 2) {
-            spinner2.setSelection(1);
+            spinnerCrew2.setSelection(1);
         }
     }
 
@@ -125,84 +143,139 @@ public class MissionControlFragment extends Fragment {
      * Starts a new mission using the selected crew members.
      */
     private void startMissionProcess() {
-        if (mainActivity.getMissionControl().getCurrentThreat() != null) {
-            Toast.makeText(getContext(), "A mission is already active!", Toast.LENGTH_SHORT).show();
+        if (mainActivity.isGameOver()) {
+            showToast(mainActivity.getGameOverReason());
             return;
         }
 
-        if (availableCrew == null || availableCrew.size() < 2) {
-            Toast.makeText(getContext(), "Need at least 2 healthy crew members!", Toast.LENGTH_SHORT).show();
+        if (availableCrew.size() < 2) {
+            showToast("Move at least two penalty-free crew members to Mission Ready.");
             return;
         }
 
-        int idx1 = spinner1.getSelectedItemPosition();
-        int idx2 = spinner2.getSelectedItemPosition();
-
+        int idx1 = spinnerCrew1.getSelectedItemPosition();
+        int idx2 = spinnerCrew2.getSelectedItemPosition();
         if (idx1 == idx2) {
-            Toast.makeText(getContext(), "Select two different crew members!", Toast.LENGTH_SHORT).show();
+            showToast("Select two different crew members.");
             return;
         }
 
-        CrewMember m1 = availableCrew.get(idx1);
-        CrewMember m2 = availableCrew.get(idx2);
+        CrewMember member1 = availableCrew.get(idx1);
+        CrewMember member2 = availableCrew.get(idx2);
 
-        MissionControl mc = mainActivity.getMissionControl();
-        String launchLog = mc.launchMission(m1, m2);
-        tvThreatName.setText("ACTIVE THREAT DETECTED");
-        tvMissionLog.setText(launchLog + "\n\nMission is active. Choose tactics and resolve, or cancel.");
+        String launchResult = mainActivity.getMissionControl().launchMission(member1, member2,
+                mainActivity.getCurrentDay());
+        missionLogAdapter.clear();
+        missionLogAdapter.addEvent(new MissionEvent(MissionEvent.TYPE_INFO, "Mission Launch",
+                launchResult));
+        refreshThreatState();
         setupCrewSpinners();
         updateButtonStates();
+        scrollLogToBottom();
     }
 
     /**
-     * Passes the selected tactics to mission control and resolves the active mission.
+     * Passes the selected tactics to mission control and plays back the resulting mission replay.
      */
     private void resolveMissionProcess() {
-        MissionControl mc = mainActivity.getMissionControl();
-        if (mc.getCurrentThreat() == null) {
-            Toast.makeText(getContext(), "No active mission to resolve.", Toast.LENGTH_SHORT).show();
+        MissionControl missionControl = mainActivity.getMissionControl();
+        if (!missionControl.hasActiveMission()) {
+            showToast("No active mission to resolve.");
             return;
         }
 
-        String tacticA = spinnerTactic1.getSelectedItem().toString();
-        String tacticB = spinnerTactic2.getSelectedItem().toString();
-        mc.setTactics(tacticA, tacticB);
+        missionControl.setTactics(
+                String.valueOf(spinnerTactic1.getSelectedItem()),
+                String.valueOf(spinnerTactic2.getSelectedItem()));
 
-        String missionLog = mc.resolveMission();
-        tvMissionLog.setText(missionLog);
-        tvThreatName.setText("Mission Concluded");
-        setupCrewSpinners();
-        updateButtonStates();
-
-        if (scrollLog != null) {
-            scrollLog.post(() -> scrollLog.fullScroll(ScrollView.FOCUS_DOWN));
-        }
+        MissionResolution resolution = mainActivity.resolveActiveMission();
+        playResolution(resolution);
     }
 
     /**
-     * Restores the mission info panel if a mission is already active.
+     * Smoothly reveals one event at a time in the mission log.
      */
-    private void refreshActiveMissionState() {
-        MissionControl mc = mainActivity.getMissionControl();
-        if (mc.getCurrentThreat() != null) {
-            Threat threat = mc.getCurrentThreat();
-            tvThreatName.setText("ACTIVE THREAT DETECTED");
-            tvMissionLog.setText("Mission already active!\n\nThreat encountered: "
-                    + threat.getName() + " [" + threat.getThreatType() + "]"
-                    + "\nThreat — skill: " + threat.getSkill()
-                    + ", resilience: " + threat.getResilience()
-                    + ", energy: " + threat.getEnergy() + "/" + threat.getMaxEnergy()
-                    + "\n\nChoose tactics and resolve, or cancel.");
+    private void playResolution(MissionResolution resolution) {
+        replayHandler.removeCallbacksAndMessages(null);
+        missionLogAdapter.clear();
+
+        List<MissionEvent> events = resolution.getEvents();
+        if (events.isEmpty()) {
+            refreshThreatState();
+            setupCrewSpinners();
+            updateButtonStates();
+            return;
         }
+
+        tvThreatName.setText("MISSION REPLAY");
+        tvThreatDetails.setText("Reviewing the most recent encounter step by step.");
+
+        for (int i = 0; i < events.size(); i++) {
+            final MissionEvent event = events.get(i);
+            replayHandler.postDelayed(() -> {
+                missionLogAdapter.addEvent(event);
+                scrollLogToBottom();
+            }, i * 420L);
+        }
+
+        replayHandler.postDelayed(() -> {
+            refreshThreatState();
+            setupCrewSpinners();
+            updateButtonStates();
+            mainActivity.showGameOverScreenIfNeeded();
+        }, events.size() * 420L + 120L);
     }
 
     /**
-     * Enables or disables mission buttons depending on whether a mission is active.
+     * Updates the active threat header for the current colony state.
+     */
+    private void refreshThreatState() {
+        if (mainActivity.isGameOver()) {
+            tvThreatName.setText("COLONY LOST");
+            tvThreatDetails.setText(mainActivity.getGameOverReason());
+            return;
+        }
+
+        Threat threat = mainActivity.ensureThreatReady();
+        if (threat == null) {
+            tvThreatName.setText("No Active Threat");
+            tvThreatDetails.setText("The colony currently has no active danger.");
+            return;
+        }
+
+        tvThreatName.setText((mainActivity.getMissionControl().hasActiveMission() ? "ACTIVE MISSION: "
+                : "ACTIVE THREAT: ") + threat.getName());
+        tvThreatDetails.setText(threat.getCategory() + " / " + threat.getArchetype()
+                + "\nHP: " + threat.getCurrentEnergy() + "/" + threat.getMaxEnergy()
+                + "\nDeadline: Day " + threat.getDeadlineDay()
+                + "\nReward: " + threat.getResourceReward() + " resources, "
+                + threat.getExperienceReward() + " XP");
+    }
+
+    /**
+     * Enables or disables mission buttons depending on mission state and game-over state.
      */
     private void updateButtonStates() {
-        boolean hasActiveMission = mainActivity.getMissionControl().getCurrentThreat() != null;
-        btnLaunch.setEnabled(!hasActiveMission);
-        btnResolve.setEnabled(hasActiveMission);
-        btnCancel.setEnabled(hasActiveMission);
+        boolean hasActiveMission = mainActivity.getMissionControl().hasActiveMission();
+        boolean canPlay = !mainActivity.isGameOver();
+        btnLaunch.setEnabled(canPlay && !hasActiveMission && availableCrew.size() >= 2);
+        btnResolve.setEnabled(canPlay && hasActiveMission);
+        btnCancel.setEnabled(canPlay && hasActiveMission);
+    }
+
+    /**
+     * Keeps the latest event visible as the replay animates.
+     */
+    private void scrollLogToBottom() {
+        if (missionLogAdapter.getItemCount() > 0) {
+            rvMissionLog.scrollToPosition(missionLogAdapter.getItemCount() - 1);
+        }
+    }
+
+    /**
+     * Convenience Toast helper.
+     */
+    private void showToast(String message) {
+        Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
     }
 }

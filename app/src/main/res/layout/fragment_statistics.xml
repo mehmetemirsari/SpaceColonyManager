@@ -13,32 +13,32 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
             android:text="STATISTICS"
             android:textColor="#FFFFFF"
             android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="16dp"/>
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tv_statistics"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="#64FFDA"
-            android:textSize="14sp"
+            android:layout_marginBottom="16dp"
+            android:background="#151A28"
             android:fontFamily="monospace"
             android:padding="12dp"
-            android:background="#151A28"
-            android:layout_marginBottom="16dp"/>
+            android:textColor="#64FFDA"
+            android:textSize="14sp" />
 
         <TextView
             android:id="@+id/tv_crew_stats_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="#8892B0"
-            android:textSize="13sp"
+            android:background="#0D1117"
             android:fontFamily="monospace"
             android:padding="12dp"
-            android:background="#0D1117"/>
+            android:textColor="#8892B0"
+            android:textSize="13sp" />
 
     </LinearLayout>
 </ScrollView>
