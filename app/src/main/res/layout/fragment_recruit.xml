@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0B0F19"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="RECRUIT NEW MEMBER"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hire a specialist for 50 resources. Colony capacity is 5 crew members."
+        android:textColor="#8892B0"
+        android:textSize="13sp"
+        android:layout_marginBottom="24dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Crew Name"
+        android:textColor="#8892B0"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/et_crew_name"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="Enter a specialist name..."
+        android:padding="12dp"
+        android:textColor="#FFFFFF"
+        android:textColorHint="#555555"
+        android:background="#1C2235"
+        android:layout_marginBottom="24dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Specialization"
+        android:textColor="#8892B0"
+        android:layout_marginBottom="8dp"/>
+
+    <Spinner
+        android:id="@+id/spinner_specialization"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="#1C2235"
+        android:layout_marginBottom="12dp"/>
+
+    <TextView
+        android:id="@+id/tv_stat_preview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#64FFDA"
+        android:textSize="13sp"
+        android:padding="12dp"
+        android:background="#151A28"
+        android:layout_marginBottom="32dp"
+        android:text="Role: evasive scout&#10;Skill: 5 | Resilience: 4 | Max Energy: 20"/>
+
+    <Button
+        android:id="@+id/btn_recruit_confirm"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:backgroundTint="#4CAF50"
+        android:text="HIRE SPECIALIST (50 RESOURCES)"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"/>
+
+</LinearLayout>

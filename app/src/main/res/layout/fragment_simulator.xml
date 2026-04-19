@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0B0F19"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="TRAINING CENTER"
+        android:textColor="#4CAF50"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Move crew members here from Quarters to train. Training grants +50 EXP and costs 10 Energy."
+        android:textColor="#8892B0"
+        android:textSize="13sp"
+        android:layout_marginBottom="16dp"/>
+
+    <LinearLayout
+        android:id="@+id/layout_training_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="visible">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_simulator_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:nestedScrollingEnabled="false"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layout_empty_simulator"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        android:layout_marginTop="50dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="NO CREW IN SIMULATOR"
+            android:textColor="#FF5252"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Go to Quarters and move crew members here to start training."
+            android:textColor="#8892B0"
+            android:textAlignment="center"
+            android:layout_marginBottom="24dp"/>
+
+        <Button
+            android:id="@+id/btn_go_to_quarters"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="GO TO QUARTERS"
+            android:backgroundTint="#2196F3"/>
+
+    </LinearLayout>
+
+</LinearLayout>

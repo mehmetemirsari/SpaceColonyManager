@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Blue circle background for Pilot -->
+    <path android:fillColor="#1565C0" android:pathData="M24,24m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0"/>
+    <!-- P letter -->
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M16,12 L16,36 L20,36 L20,28 L26,28 C30,28 33,25 33,20 C33,15 30,12 26,12 Z M20,16 L25,16 C28,16 29,17.5 29,20 C29,22.5 28,24 25,24 L20,24 Z"/>
+</vector>
