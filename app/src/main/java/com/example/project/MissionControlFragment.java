@@ -112,6 +112,16 @@ public class MissionControlFragment extends Fragment {
      * Populates the crew selection spinners with mission-ready crew.
      */
     private void setupCrewSpinners() {
+        MissionControl missionControl = mainActivity.getMissionControl();
+        if (missionControl.hasActiveMission()
+                && missionControl.getActiveMemberA() != null
+                && missionControl.getActiveMemberB() != null) {
+            availableCrew = Collections.emptyList();
+            bindCrewSpinner(spinnerCrew1, missionControl.getActiveMemberA(), false);
+            bindCrewSpinner(spinnerCrew2, missionControl.getActiveMemberB(), false);
+            return;
+        }
+
         availableCrew = new ArrayList<>();
         for (CrewMember crewMember : mainActivity.getStorage().getAllCrew()) {
             if (CrewMember.LOCATION_MISSION_READY.equals(crewMember.getLocation())
@@ -122,9 +132,7 @@ public class MissionControlFragment extends Fragment {
 
         List<String> crewLabels = new ArrayList<>();
         for (CrewMember crewMember : availableCrew) {
-            crewLabels.add(crewMember.getName() + " (" + crewMember.getSpecialization() + ")"
-                    + " | Lv." + crewMember.getLevel()
-                    + " | HP " + crewMember.getCurrentEnergy() + "/" + crewMember.getMaxEnergy());
+            crewLabels.add(buildCrewLabel(crewMember));
         }
 
         if (crewLabels.isEmpty()) {
@@ -134,6 +142,10 @@ public class MissionControlFragment extends Fragment {
         ThemedSpinnerAdapter adapter = new ThemedSpinnerAdapter(requireContext(), crewLabels);
         spinnerCrew1.setAdapter(adapter);
         spinnerCrew2.setAdapter(adapter);
+        spinnerCrew1.setEnabled(true);
+        spinnerCrew2.setEnabled(true);
+        spinnerCrew1.setAlpha(1f);
+        spinnerCrew2.setAlpha(1f);
         if (availableCrew.size() >= 2) {
             spinnerCrew2.setSelection(1);
         }
@@ -165,9 +177,14 @@ public class MissionControlFragment extends Fragment {
 
         String launchResult = mainActivity.getMissionControl().launchMission(member1, member2,
                 mainActivity.getCurrentDay());
+        boolean launched = launchResult.startsWith("Mission launched");
         missionLogAdapter.clear();
-        missionLogAdapter.addEvent(new MissionEvent(MissionEvent.TYPE_INFO, "Mission Launch",
+        missionLogAdapter.addEvent(new MissionEvent(MissionEvent.TYPE_INFO,
+                launched ? "Mission Launch" : "Launch Blocked",
                 launchResult));
+        if (!launched) {
+            showToast(launchResult);
+        }
         refreshThreatState();
         setupCrewSpinners();
         updateButtonStates();
@@ -250,6 +267,28 @@ public class MissionControlFragment extends Fragment {
                 + "\nDeadline: Day " + threat.getDeadlineDay()
                 + "\nReward: " + threat.getResourceReward() + " resources, "
                 + threat.getExperienceReward() + " XP");
+    }
+
+    /**
+     * Shows one fixed crew member in a spinner while a mission is active.
+     */
+    private void bindCrewSpinner(@NonNull Spinner spinner, @NonNull CrewMember crewMember,
+            boolean enabled) {
+        spinner.setAdapter(new ThemedSpinnerAdapter(requireContext(),
+                Collections.singletonList(buildCrewLabel(crewMember))));
+        spinner.setSelection(0);
+        spinner.setEnabled(enabled);
+        spinner.setAlpha(enabled ? 1f : 0.72f);
+    }
+
+    /**
+     * Builds one consistent crew label for mission setup and active mission display.
+     */
+    @NonNull
+    private String buildCrewLabel(@NonNull CrewMember crewMember) {
+        return crewMember.getName() + " (" + crewMember.getSpecialization() + ")"
+                + " | Lv." + crewMember.getLevel()
+                + " | HP " + crewMember.getCurrentEnergy() + "/" + crewMember.getMaxEnergy();
     }
 
     /**
