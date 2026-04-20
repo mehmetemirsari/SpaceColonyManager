@@ -59,12 +59,16 @@ public class StatisticsManager {
     /**
      * @return total attempted missions
      */
-    public int getTotalMissions() { return totalMissions; }
+    public int getTotalMissions() {
+        return totalMissions;
+    }
 
     /**
      * @return total successful missions
      */
-    public int getTotalWins() { return totalWins; }
+    public int getTotalWins() {
+        return totalWins;
+    }
 
     /**
      * Restores total mission count from saved data.

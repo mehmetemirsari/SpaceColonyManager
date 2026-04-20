@@ -217,41 +217,69 @@ public class MainActivity extends AppCompatActivity {
      */
     private boolean loadGameFromSlot(@NonNull String prefix) {
         SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        if (!prefix.isEmpty() && !sharedPreferences.getBoolean(prefix + KEY_SAVE_PRESENT, false)) {
+        if (!hasSaveData(sharedPreferences, prefix)) {
+            return false;
+        }
+
+        String crewJson = sharedPreferences.getString(prefix + KEY_CREW_DATA, null);
+        List<CrewMember> loadedCrew;
+        Threat savedThreat;
+        int savedResources;
+        int savedDay;
+        int savedTotalMissions;
+        int savedTotalWins;
+        int savedCompletedMissions;
+        boolean savedGameOver;
+        String savedGameOverReason;
+        boolean savedActiveMission;
+        int savedMemberAId;
+        int savedMemberBId;
+        String savedTacticA;
+        String savedTacticB;
+
+        try {
+            loadedCrew = crewJson == null ? new java.util.ArrayList<>()
+                    : saveLoadManager.loadStorageFromJson(crewJson);
+            savedThreat = saveLoadManager.loadThreatFromJson(
+                    sharedPreferences.getString(prefix + KEY_THREAT_DATA, null));
+            savedResources = sharedPreferences.getInt(prefix + KEY_COLONY_RESOURCES, 150);
+            savedDay = sharedPreferences.getInt(prefix + KEY_CURRENT_DAY, 1);
+            savedTotalMissions = sharedPreferences.getInt(prefix + KEY_TOTAL_MISSIONS, 0);
+            savedTotalWins = sharedPreferences.getInt(prefix + KEY_TOTAL_WINS, 0);
+            savedCompletedMissions = sharedPreferences.getInt(prefix + KEY_COMPLETED_MISSIONS, 0);
+            savedGameOver = sharedPreferences.getBoolean(prefix + KEY_GAME_OVER, false);
+            savedGameOverReason = sharedPreferences.getString(prefix + KEY_GAME_OVER_REASON, "");
+            savedActiveMission = sharedPreferences.getBoolean(prefix + KEY_ACTIVE_MISSION, false);
+            savedMemberAId = sharedPreferences.getInt(prefix + KEY_ACTIVE_MEMBER_A, -1);
+            savedMemberBId = sharedPreferences.getInt(prefix + KEY_ACTIVE_MEMBER_B, -1);
+            savedTacticA = sharedPreferences.getString(prefix + KEY_TACTIC_A,
+                    MissionControl.TACTIC_ATTACK);
+            savedTacticB = sharedPreferences.getString(prefix + KEY_TACTIC_B,
+                    MissionControl.TACTIC_ATTACK);
+        } catch (RuntimeException exception) {
             return false;
         }
 
         resetRuntimeState();
 
-        String crewJson = sharedPreferences.getString(prefix + KEY_CREW_DATA, null);
-        if (crewJson != null) {
-            List<CrewMember> loadedCrew = saveLoadManager.loadStorageFromJson(crewJson);
-            for (CrewMember crewMember : loadedCrew) {
-                storage.addCrewMember(crewMember);
-            }
+        for (CrewMember crewMember : loadedCrew) {
+            storage.addCrewMember(crewMember);
         }
 
-        colonyResources = sharedPreferences.getInt(prefix + KEY_COLONY_RESOURCES, 150);
-        currentDay = sharedPreferences.getInt(prefix + KEY_CURRENT_DAY, 1);
-        statisticsManager.setTotalMissions(sharedPreferences.getInt(prefix + KEY_TOTAL_MISSIONS, 0));
-        statisticsManager.setTotalWins(sharedPreferences.getInt(prefix + KEY_TOTAL_WINS, 0));
-        missionControl.setCompletedMissions(sharedPreferences.getInt(prefix + KEY_COMPLETED_MISSIONS, 0));
-        gameOver = sharedPreferences.getBoolean(prefix + KEY_GAME_OVER, false);
-        gameOverReason = sharedPreferences.getString(prefix + KEY_GAME_OVER_REASON, "");
+        colonyResources = savedResources;
+        currentDay = savedDay;
+        statisticsManager.setTotalMissions(savedTotalMissions);
+        statisticsManager.setTotalWins(savedTotalWins);
+        missionControl.setCompletedMissions(savedCompletedMissions);
+        gameOver = savedGameOver;
+        gameOverReason = savedGameOverReason == null ? "" : savedGameOverReason;
         musicManager.restorePreferences(sharedPreferences, prefix);
-
-        Threat savedThreat = saveLoadManager.loadThreatFromJson(
-                sharedPreferences.getString(prefix + KEY_THREAT_DATA, null));
         missionControl.setCurrentThreat(savedThreat);
 
-        if (sharedPreferences.getBoolean(prefix + KEY_ACTIVE_MISSION, false)) {
-            CrewMember memberA = storage.getCrewMember(
-                    sharedPreferences.getInt(prefix + KEY_ACTIVE_MEMBER_A, -1));
-            CrewMember memberB = storage.getCrewMember(
-                    sharedPreferences.getInt(prefix + KEY_ACTIVE_MEMBER_B, -1));
-            missionControl.restoreActiveMission(memberA, memberB,
-                    sharedPreferences.getString(prefix + KEY_TACTIC_A, MissionControl.TACTIC_ATTACK),
-                    sharedPreferences.getString(prefix + KEY_TACTIC_B, MissionControl.TACTIC_ATTACK));
+        if (savedActiveMission) {
+            CrewMember memberA = storage.getCrewMember(savedMemberAId);
+            CrewMember memberB = storage.getCrewMember(savedMemberBId);
+            missionControl.restoreActiveMission(memberA, memberB, savedTacticA, savedTacticB);
         }
 
         updateGameOverUi();
@@ -330,6 +358,11 @@ public class MainActivity extends AppCompatActivity {
         }
         if (missionControl.hasActiveMission()) {
             return "Resolve or cancel the active mission before resting the whole colony.";
+        }
+        if (!quarters.hasCrewToRest(storage)) {
+            return storage.getCrewCount() == 0
+                    ? "There are no crew members to recover yet."
+                    : "There are no crew members in Quarters to recover right now.";
         }
 
         quarters.restAll(storage);
@@ -466,8 +499,11 @@ public class MainActivity extends AppCompatActivity {
      */
     @NonNull
     public String loadManualSave() {
-        if (!loadGameFromSlot(MANUAL_SAVE_PREFIX)) {
+        if (!hasManualSave()) {
             return "No manual save was found yet.";
+        }
+        if (!loadGameFromSlot(MANUAL_SAVE_PREFIX)) {
+            return "Manual save data was invalid and could not be restored.";
         }
 
         if (!gameOver) {
@@ -652,5 +688,15 @@ public class MainActivity extends AppCompatActivity {
         if (bottomNav != null) {
             bottomNav.getMenu().findItem(R.id.nav_home).setChecked(true);
         }
+    }
+
+    /**
+     * Checks whether a preference slot contains enough data to attempt a restore.
+     */
+    private boolean hasSaveData(@NonNull SharedPreferences sharedPreferences, @NonNull String prefix) {
+        return sharedPreferences.getBoolean(prefix + KEY_SAVE_PRESENT, false)
+                || sharedPreferences.contains(prefix + KEY_CREW_DATA)
+                || sharedPreferences.contains(prefix + KEY_CURRENT_DAY)
+                || sharedPreferences.contains(prefix + KEY_THREAT_DATA);
     }
 }

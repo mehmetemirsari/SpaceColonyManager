@@ -140,6 +140,9 @@ public class MusicManager {
         if (index < 0 || index >= TRACK_RESOURCES.length) {
             return;
         }
+        if (selectedTrackIndex == index && mediaPlayer != null) {
+            return;
+        }
         selectedTrackIndex = index;
         start();
     }
@@ -189,7 +192,11 @@ public class MusicManager {
      */
     private void releasePlayer() {
         if (mediaPlayer != null) {
-            mediaPlayer.stop();
+            try {
+                mediaPlayer.stop();
+            } catch (IllegalStateException exception) {
+                // Player may already be stopping or released; ignore and continue cleanup.
+            }
             mediaPlayer.release();
             mediaPlayer = null;
         }

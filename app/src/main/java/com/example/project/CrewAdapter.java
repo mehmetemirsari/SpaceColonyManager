@@ -86,7 +86,7 @@ public class CrewAdapter extends RecyclerView.Adapter<CrewAdapter.CrewViewHolder
 
         switch (member.getLocation()) {
             case CrewMember.LOCATION_QUARTERS:
-                configureButton(holder.btnAction1, "To Simulator",
+                configureButton(holder.btnAction1, "Simulator",
                         v -> listener.onAction(member, "simulator"));
                 configureButton(holder.btnAction2, "Mission Prep",
                         v -> listener.onAction(member, "ready"));
@@ -97,7 +97,7 @@ public class CrewAdapter extends RecyclerView.Adapter<CrewAdapter.CrewViewHolder
             case CrewMember.LOCATION_MISSION_READY:
                 configureButton(holder.btnAction1, "To Quarters",
                         v -> listener.onAction(member, "quarters"));
-                configureButton(holder.btnAction2, "To Simulator",
+                configureButton(holder.btnAction2, "Simulator",
                         v -> listener.onAction(member, "simulator"));
                 holder.btnAction3.setVisibility(View.GONE);
                 break;

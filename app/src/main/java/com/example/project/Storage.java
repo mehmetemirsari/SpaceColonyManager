@@ -1,6 +1,7 @@
 package com.example.project;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -61,7 +62,9 @@ public class Storage {
      * @return list of all current crew members
      */
     public List<CrewMember> getAllCrew() {
-        return new ArrayList<>(crewMap.values());
+        List<CrewMember> crewList = new ArrayList<>(crewMap.values());
+        crewList.sort(Comparator.comparingInt(CrewMember::getId));
+        return crewList;
     }
 
     /**
@@ -90,7 +93,7 @@ public class Storage {
      */
     public List<CrewMember> getCrewByLocation(String location) {
         List<CrewMember> filtered = new ArrayList<>();
-        for (CrewMember member : crewMap.values()) {
+        for (CrewMember member : getAllCrew()) {
             if (location.equals(member.getLocation())) {
                 filtered.add(member);
             }
@@ -115,7 +118,7 @@ public class Storage {
      * Applies one day of Quarters recovery to the whole colony.
      */
     public void advanceRecoveryDay() {
-        for (CrewMember member : crewMap.values()) {
+        for (CrewMember member : getAllCrew()) {
             member.advanceRecoveryDay();
         }
     }
@@ -126,7 +129,7 @@ public class Storage {
      * @param excludedIds crew ids whose penalties should not tick down yet
      */
     public void decrementMissionPenaltiesExcluding(Collection<Integer> excludedIds) {
-        for (CrewMember member : crewMap.values()) {
+        for (CrewMember member : getAllCrew()) {
             if (excludedIds != null && excludedIds.contains(member.getId())) {
                 continue;
             }

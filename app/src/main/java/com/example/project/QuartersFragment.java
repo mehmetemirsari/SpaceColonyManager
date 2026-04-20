@@ -22,6 +22,7 @@ public class QuartersFragment extends Fragment {
 
     private MainActivity mainActivity;
     private CrewAdapter adapter;
+    private View btnRestAll;
 
     @Nullable
     @Override
@@ -72,11 +73,13 @@ public class QuartersFragment extends Fragment {
         });
         recyclerView.setAdapter(adapter);
 
-        view.findViewById(R.id.btn_rest_all).setOnClickListener(v -> {
+        btnRestAll = view.findViewById(R.id.btn_rest_all);
+        btnRestAll.setOnClickListener(v -> {
             Toast.makeText(getContext(), mainActivity.restAllCrew(), Toast.LENGTH_LONG).show();
             refreshList();
             mainActivity.showGameOverScreenIfNeeded();
         });
+        updateRestAllButtonState();
     }
 
     @Override
@@ -92,6 +95,7 @@ public class QuartersFragment extends Fragment {
         if (adapter != null) {
             adapter.updateList(getDisplayedCrew());
         }
+        updateRestAllButtonState();
     }
 
     /**
@@ -106,5 +110,18 @@ public class QuartersFragment extends Fragment {
             }
         }
         return displayedCrew;
+    }
+
+    /**
+     * Disables the full-colony rest action when the colony has no crew members yet.
+     */
+    private void updateRestAllButtonState() {
+        if (btnRestAll == null || mainActivity == null) {
+            return;
+        }
+
+        boolean hasCrewToRest = mainActivity.getQuarters().hasCrewToRest(mainActivity.getStorage());
+        btnRestAll.setEnabled(hasCrewToRest);
+        btnRestAll.setAlpha(hasCrewToRest ? 1f : 0.45f);
     }
 }

@@ -45,29 +45,41 @@ public class HowToPlayFragment extends Fragment {
     private List<HowToPlayAdapter.GuideSection> buildGuideSections() {
         List<HowToPlayAdapter.GuideSection> sections = new ArrayList<>();
         sections.add(new HowToPlayAdapter.GuideSection(
-                "Recruit Specialists",
-                "Hire crew members from the Recruit screen. Every specialist starts with a unique base role, attack power, resilience, and HP profile."));
+                "Build Your Colony",
+                "Your colony starts small. Recruit specialists from the Recruit screen, remember the crew cap is 5, and spend resources carefully because each recruit costs 50."));
         sections.add(new HowToPlayAdapter.GuideSection(
-                "Move Them Through The Colony",
-                "Use Quarters to recover, the Simulator to train, and Mission Ready staging to prepare a squad before launching a mission."));
+                "Know The Five Roles",
+                "Pilots are evasive specialists who shine against Flying threats, Engineers control technical problems, Medics sustain the squad against Biological pressure, Scientists exploit Anomalies, and Soldiers lead the front line against Combat threats."));
         sections.add(new HowToPlayAdapter.GuideSection(
-                "Level Up Your Crew",
-                "Every 100 XP raises a crew member's level. Each new level increases attack and max HP. Training gives 25 XP, successful missions give 100 XP, and failed missions still give 50 XP."));
+                "Move Crew Between Stations",
+                "Use Quarters for healing and recovery, the Simulator for XP training, Mission Ready for staging a squad, and On Mission for active deployment once a launch is confirmed."));
         sections.add(new HowToPlayAdapter.GuideSection(
-                "Watch The Active Threat",
-                "Only one threat is active at a time. Each threat has a 5-day deadline, and if it stays active past that deadline the colony loses immediately."));
-        sections.add(new HowToPlayAdapter.GuideSection(
-                "Use Tactics And Compositions",
-                "Attack and Defend tactics change combat flow. Specializations and crew pairings perform better on certain threat categories, so squad composition matters."));
+                "How XP And Leveling Work",
+                "Training grants 25 XP, failed missions still grant 50 XP, and successful missions grant 100 XP. Every 100 XP raises a crew member by 1 level, which increases both attack and max HP."));
         sections.add(new HowToPlayAdapter.GuideSection(
                 "How A Day Passes",
-                "A day only advances when you do a time-consuming action: training a crew member, using Rest All in Quarters, calling a supply drop, or resolving a mission. Recruiting, moving crew members, and opening screens do not advance the day."));
+                "Time only advances when you do a major action: training, using Rest All, calling a supply drop, or resolving a mission. Recruiting, moving crew, and browsing screens do not consume a day."));
         sections.add(new HowToPlayAdapter.GuideSection(
-                "Manage Time And Resources",
-                "Recruiting costs resources, missions reward resources, and supply drops trade one day for extra income. Plan your timing so you do not let the active threat sit too long."));
+                "Watch The Active Threat",
+                "Only one active threat exists at a time. Every threat shows a category, archetype, HP, deadline, and reward, and the current colony deadline is 5 days. If that deadline is missed, the colony collapses immediately."));
         sections.add(new HowToPlayAdapter.GuideSection(
-                "Handle Knockouts Carefully",
-                "If a crew member drops to 0 HP, they move back to Quarters, become injured, and must skip the next mission while recovering."));
+                "Launching A Mission",
+                "Move 2 penalty-free crew members to Mission Ready, choose one tactic for each crew member, review the preview cards, and confirm the launch. The mission then starts and resolves automatically, and the log replays the encounter step by step."));
+        sections.add(new HowToPlayAdapter.GuideSection(
+                "Attack And Defend Tactics",
+                "Both crew members choose their own Attack or Defend tactic in Mission Control. The preview cards show what each tactic will do before launch, the selected tactic is highlighted, and the choice changes retaliation, healing, shielding, support, and bonus damage."));
+        sections.add(new HowToPlayAdapter.GuideSection(
+                "Role Abilities And Pair Bonuses",
+                "Each role uses different Attack and Defend abilities. Medics can heal and support, Soldiers can guard and counterattack, Pilots provide evasive cover, Engineers build barriers and sabotage targets, and Scientists scan for weak points. Pair bonuses also matter, especially Pilot + Engineer, Medic + Scientist, and Soldier + Medic."));
+        sections.add(new HowToPlayAdapter.GuideSection(
+                "Knockouts, Injury, And Penalties",
+                "If a crew member reaches 0 HP, they are not deleted. They return to Quarters, become injured, and must skip the next mission before they can be used again. Recovery happens in Quarters over time."));
+        sections.add(new HowToPlayAdapter.GuideSection(
+                "Resources, Rewards, And Supply Drops",
+                "Successful missions reward colony resources, and supply drops trade 1 day for extra resources. Resources matter because recruiting, recovery planning, and surviving long enough to beat deadlines all depend on them."));
+        sections.add(new HowToPlayAdapter.GuideSection(
+                "Settings, Saves, And Losing",
+                "The Settings screen lets you change menu music, adjust volume, create a manual save, load a manual save, or reset the colony. If the colony collapses, a full-screen loss screen appears, Try Again starts a new run, and Load Manual Save restores a saved colony if one exists."));
         return sections;
     }
 }

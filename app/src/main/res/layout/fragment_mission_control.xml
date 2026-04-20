@@ -1,160 +1,313 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#0B0F19"
-    android:orientation="vertical"
-    android:padding="16dp">
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="MISSION CONTROL"
-        android:textColor="#FFFFFF"
-        android:textSize="20sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"
-        android:text="Prepare two mission-ready crew members, assign tactics, and replay each step of the encounter."
-        android:textColor="#8892B0"
-        android:textSize="12sp" />
-
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        app:cardBackgroundColor="#1C2235"
-        app:cardCornerRadius="10dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:id="@+id/tv_threat_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="No Active Threat"
-                android:textColor="#FF5252"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tv_threat_details"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Threat details appear here."
-                android:textColor="#C8D1E6"
-                android:textSize="12sp" />
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="4dp"
-        android:text="Mission Crew 1"
-        android:textColor="#C8D1E6" />
-
-    <Spinner
-        android:id="@+id/spinner_crew_1"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_marginBottom="8dp"
-        android:background="#1C2235"
-        android:popupBackground="#1C2235" />
-
-    <Spinner
-        android:id="@+id/spinner_tactic_1"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_marginBottom="12dp"
-        android:background="#151A28"
-        android:popupBackground="#1C2235" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="4dp"
-        android:text="Mission Crew 2"
-        android:textColor="#C8D1E6" />
-
-    <Spinner
-        android:id="@+id/spinner_crew_2"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_marginBottom="8dp"
-        android:background="#1C2235"
-        android:popupBackground="#1C2235" />
-
-    <Spinner
-        android:id="@+id/spinner_tactic_2"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_marginBottom="16dp"
-        android:background="#151A28"
-        android:popupBackground="#1C2235" />
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:orientation="horizontal">
+        android:orientation="vertical"
+        android:padding="16dp">
 
-        <Button
-            android:id="@+id/btn_launch_mission"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:backgroundTint="#4CAF50"
-            android:text="LAUNCH"
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="MISSION CONTROL"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="Prepare two mission-ready crew members, assign tactics, and replay each step of the encounter."
+            android:textColor="#8892B0"
+            android:textSize="12sp" />
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="#1C2235"
+            app:cardCornerRadius="10dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tv_threat_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="No Active Threat"
+                    android:textColor="#FF5252"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_threat_details"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Threat details appear here."
+                    android:textColor="#C8D1E6"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:text="Mission Crew 1"
+            android:textColor="#C8D1E6" />
+
+        <Spinner
+            android:id="@+id/spinner_crew_1"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginBottom="8dp"
+            android:background="#1C2235"
+            android:popupBackground="#1C2235" />
+
+        <Spinner
+            android:id="@+id/spinner_tactic_1"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginBottom="8dp"
+            android:background="#151A28"
+            android:popupBackground="#1C2235" />
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            app:cardBackgroundColor="#111827"
+            app:cardCornerRadius="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:id="@+id/tv_preview_crew_1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Awaiting Mission Pair"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/card_preview_1_attack"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:orientation="vertical"
+                    android:padding="10dp">
+
+                    <TextView
+                        android:id="@+id/tv_preview_1_attack_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="ATTACK - Attack Preview"
+                        android:textColor="#FFF3E0"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_preview_1_attack_details"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Select mission-ready crew to see tactic effects."
+                        android:textColor="#D8E0F2"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/card_preview_1_defend"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="vertical"
+                    android:padding="10dp">
+
+                    <TextView
+                        android:id="@+id/tv_preview_1_defend_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="DEFEND - Defend Preview"
+                        android:textColor="#E3F2FD"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_preview_1_defend_details"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Select mission-ready crew to see tactic effects."
+                        android:textColor="#D8E0F2"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:text="Mission Crew 2"
+            android:textColor="#C8D1E6" />
+
+        <Spinner
+            android:id="@+id/spinner_crew_2"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginBottom="8dp"
+            android:background="#1C2235"
+            android:popupBackground="#1C2235" />
+
+        <Spinner
+            android:id="@+id/spinner_tactic_2"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginBottom="8dp"
+            android:background="#151A28"
+            android:popupBackground="#1C2235" />
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="#111827"
+            app:cardCornerRadius="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:id="@+id/tv_preview_crew_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Awaiting Mission Pair"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/card_preview_2_attack"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:orientation="vertical"
+                    android:padding="10dp">
+
+                    <TextView
+                        android:id="@+id/tv_preview_2_attack_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="ATTACK - Attack Preview"
+                        android:textColor="#FFF3E0"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_preview_2_attack_details"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Select mission-ready crew to see tactic effects."
+                        android:textColor="#D8E0F2"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/card_preview_2_defend"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="vertical"
+                    android:padding="10dp">
+
+                    <TextView
+                        android:id="@+id/tv_preview_2_defend_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="DEFEND - Defend Preview"
+                        android:textColor="#E3F2FD"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_preview_2_defend_details"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Select mission-ready crew to see tactic effects."
+                        android:textColor="#D8E0F2"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btn_launch_mission"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:backgroundTint="#4CAF50"
+                android:text="CONFIRM AND DEPLOY"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btn_cancel_mission"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:backgroundTint="#FF5252"
+                android:text="CANCEL"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="8dp"
+            android:text="MISSION LOG"
             android:textColor="#FFFFFF"
             android:textStyle="bold" />
 
-        <Button
-            android:id="@+id/btn_cancel_mission"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_weight="1"
-            android:backgroundTint="#FF5252"
-            android:text="CANCEL"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_mission_log"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:background="#0D1117"
+            android:padding="6dp" />
+
     </LinearLayout>
-
-    <Button
-        android:id="@+id/btn_resolve_mission"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_marginBottom="12dp"
-        android:backgroundTint="#FF9800"
-        android:text="RESOLVE AND REPLAY"
-        android:textColor="#FFFFFF"
-        android:textStyle="bold" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="MISSION LOG"
-        android:textColor="#FFFFFF"
-        android:textStyle="bold" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_mission_log"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="#0D1117"
-        android:padding="6dp" />
-
-</LinearLayout>
+</androidx.core.widget.NestedScrollView>

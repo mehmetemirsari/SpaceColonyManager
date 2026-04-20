@@ -11,6 +11,18 @@ import java.util.List;
 public class Quarters {
 
     /**
+     * Checks whether the colony currently has any crew members in Quarters who can participate
+     * in a full-colony recovery day.
+     *
+     * @param storage storage containing the colony crew list
+     * @return {@code true} when at least one crew member is currently in Quarters
+     */
+    public boolean hasCrewToRest(Storage storage) {
+        return storage != null
+                && !storage.getCrewByLocation(CrewMember.LOCATION_QUARTERS).isEmpty();
+    }
+
+    /**
      * Fully restores one crew member and ensures they are assigned to Quarters.
      *
      * @param member crew member to rest

@@ -66,20 +66,29 @@ public class SaveLoadManager {
                 continue;
             }
 
-            CrewMember member = createSpecialist(
-                    Integer.parseInt(fields[0]),
-                    decode(fields[1]),
-                    decode(fields[2]));
+            CrewMember member;
+            try {
+                member = createSpecialist(
+                        Integer.parseInt(fields[0]),
+                        decode(fields[1]),
+                        decode(fields[2]));
+            } catch (RuntimeException exception) {
+                continue;
+            }
 
             if (member == null) {
                 continue;
             }
 
-            member.setExperience(Integer.parseInt(fields[4]));
-            member.setCurrentEnergy(Integer.parseInt(fields[3]));
-            member.setInjuredStatus(Boolean.parseBoolean(fields[5]));
-            member.setLocation(normalizeLocation(decode(fields[6])));
-            member.setMissionPenaltyRemaining(Integer.parseInt(fields[7]));
+            try {
+                member.setExperience(Integer.parseInt(fields[4]));
+                member.setCurrentEnergy(Integer.parseInt(fields[3]));
+                member.setInjuredStatus(Boolean.parseBoolean(fields[5]));
+                member.setLocation(normalizeLocation(decode(fields[6])));
+                member.setMissionPenaltyRemaining(Integer.parseInt(fields[7]));
+            } catch (RuntimeException exception) {
+                continue;
+            }
             loadedCrew.add(member);
         }
         return loadedCrew;
@@ -125,18 +134,22 @@ public class SaveLoadManager {
             return null;
         }
 
-        return new Threat(
-                decode(fields[0]),
-                decode(fields[1]),
-                decode(fields[2]),
-                Integer.parseInt(fields[3]),
-                Integer.parseInt(fields[4]),
-                Integer.parseInt(fields[5]),
-                Integer.parseInt(fields[6]),
-                Integer.parseInt(fields[7]),
-                Integer.parseInt(fields[8]),
-                Integer.parseInt(fields[9]),
-                Integer.parseInt(fields[10]));
+        try {
+            return new Threat(
+                    decode(fields[0]),
+                    decode(fields[1]),
+                    decode(fields[2]),
+                    Integer.parseInt(fields[3]),
+                    Integer.parseInt(fields[4]),
+                    Integer.parseInt(fields[5]),
+                    Integer.parseInt(fields[6]),
+                    Integer.parseInt(fields[7]),
+                    Integer.parseInt(fields[8]),
+                    Integer.parseInt(fields[9]),
+                    Integer.parseInt(fields[10]));
+        } catch (RuntimeException exception) {
+            return null;
+        }
     }
 
     /**

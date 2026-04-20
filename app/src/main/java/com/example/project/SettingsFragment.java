@@ -54,7 +54,9 @@ public class SettingsFragment extends Fragment {
             @Override
             public void onItemSelected(android.widget.AdapterView<?> parent, View itemView,
                     int position, long id) {
-                musicManager.setSelectedTrackIndex(position);
+                if (musicManager.getSelectedTrackIndex() != position) {
+                    musicManager.setSelectedTrackIndex(position);
+                }
                 tvCurrentTrack.setText("Now playing: " + musicManager.getCurrentTrackName());
             }
 
