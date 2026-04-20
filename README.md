@@ -62,3 +62,6 @@ The game combines colony management and turn-based mission mechanics. Players mu
 ## UML's
 
 You can find the related UML diagrams as uml.png, uml2.png and uml3.png.
+## Contributors
+Emir: gameplay systems, technical structure, mission mechanics
+Gülse: interface, player flow, accessibility, summary and polish
