@@ -1,5 +1,6 @@
 package com.example.project;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -16,6 +17,7 @@ public class SaveLoadManager {
 
     private static final String RECORD_SEPARATOR = "\n";
     private static final String FIELD_SEPARATOR = "\t";
+    private static final String UTF_8_NAME = StandardCharsets.UTF_8.name();
 
     /**
      * Serializes all crew members in storage into a save string.
@@ -171,13 +173,21 @@ public class SaveLoadManager {
      * Escapes a field for safe persistence.
      */
     private String encode(String value) {
-        return URLEncoder.encode(value == null ? "" : value, StandardCharsets.UTF_8);
+        try {
+            return URLEncoder.encode(value == null ? "" : value, UTF_8_NAME);
+        } catch (UnsupportedEncodingException exception) {
+            throw new IllegalStateException("UTF-8 should always be available.", exception);
+        }
     }
 
     /**
      * Restores an escaped save field.
      */
     private String decode(String value) {
-        return URLDecoder.decode(value == null ? "" : value, StandardCharsets.UTF_8);
+        try {
+            return URLDecoder.decode(value == null ? "" : value, UTF_8_NAME);
+        } catch (UnsupportedEncodingException exception) {
+            throw new IllegalStateException("UTF-8 should always be available.", exception);
+        }
     }
 }

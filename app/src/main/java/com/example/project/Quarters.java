@@ -22,7 +22,7 @@ public class Quarters {
             } else {
                 member.restoreEnergy();
             }
-            member.setLocation("Quarters");
+            member.setLocation(CrewMember.LOCATION_QUARTERS);
         }
     }
 
@@ -32,7 +32,7 @@ public class Quarters {
      * @param member crew member to recover
      */
     public void recoverCrew(CrewMember member) {
-        if (member != null && "Quarters".equals(member.getLocation())) {
+        if (member != null && CrewMember.LOCATION_QUARTERS.equals(member.getLocation())) {
             member.advanceRecoveryDay();
         }
     }
@@ -43,7 +43,7 @@ public class Quarters {
      * @param storage storage containing the colony crew list
      */
     public void restAll(Storage storage) {
-        List<CrewMember> quartersCrew = storage.getCrewByLocation("Quarters");
+        List<CrewMember> quartersCrew = storage.getCrewByLocation(CrewMember.LOCATION_QUARTERS);
         for (CrewMember member : quartersCrew) {
             if (member.isInjured()) {
                 member.advanceRecoveryDay();

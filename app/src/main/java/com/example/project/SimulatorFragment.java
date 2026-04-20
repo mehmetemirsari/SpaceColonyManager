@@ -70,10 +70,6 @@ public class SimulatorFragment extends Fragment {
 
             Button btnGoToQuarters = view.findViewById(R.id.btn_go_to_quarters);
             btnGoToQuarters.setOnClickListener(v -> {
-                mainActivity.getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, new QuartersFragment())
-                        .addToBackStack(null)
-                        .commit();
                 BottomNavigationView navigationView = mainActivity.findViewById(R.id.bottom_navigation);
                 navigationView.setSelectedItemId(R.id.nav_quarters);
             });

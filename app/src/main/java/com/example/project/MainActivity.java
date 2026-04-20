@@ -216,14 +216,12 @@ public class MainActivity extends AppCompatActivity {
      * @return {@code true} when a save was restored
      */
     private boolean loadGameFromSlot(@NonNull String prefix) {
-        resetRuntimeState();
-
         SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         if (!prefix.isEmpty() && !sharedPreferences.getBoolean(prefix + KEY_SAVE_PRESENT, false)) {
-            musicManager.restorePreferences(sharedPreferences, "");
-            updateGameOverUi();
             return false;
         }
+
+        resetRuntimeState();
 
         String crewJson = sharedPreferences.getString(prefix + KEY_CREW_DATA, null);
         if (crewJson != null) {

@@ -59,13 +59,13 @@ public class HomeFragment extends Fragment {
         recyclerView.setAdapter(crewAdapter);
 
         view.findViewById(R.id.card_recruit)
-                .setOnClickListener(v -> navigateToBottomNavFragment(new RecruitFragment(), R.id.nav_recruit));
+                .setOnClickListener(v -> navigateToBottomNavFragment(R.id.nav_recruit));
         view.findViewById(R.id.card_mission)
-                .setOnClickListener(v -> navigateToBottomNavFragment(new MissionControlFragment(), R.id.nav_mission));
+                .setOnClickListener(v -> navigateToBottomNavFragment(R.id.nav_mission));
         view.findViewById(R.id.card_quarters)
-                .setOnClickListener(v -> navigateToBottomNavFragment(new QuartersFragment(), R.id.nav_quarters));
+                .setOnClickListener(v -> navigateToBottomNavFragment(R.id.nav_quarters));
         view.findViewById(R.id.card_simulator)
-                .setOnClickListener(v -> navigateToBottomNavFragment(new SimulatorFragment(), R.id.nav_simulator));
+                .setOnClickListener(v -> navigateToBottomNavFragment(R.id.nav_simulator));
         view.findViewById(R.id.card_supply)
                 .setOnClickListener(v -> {
                     Toast.makeText(getContext(), mainActivity.requestSupplyDrop(), Toast.LENGTH_LONG).show();
@@ -142,19 +142,14 @@ public class HomeFragment extends Fragment {
     }
 
     /**
-     * Replaces the current fragment and updates the selected bottom navigation item.
+     * Switches the currently selected bottom-navigation destination.
      */
-    private void navigateToBottomNavFragment(Fragment fragment, int navItemId) {
+    private void navigateToBottomNavFragment(int navItemId) {
         if (!(getActivity() instanceof MainActivity)) {
             return;
         }
 
         MainActivity activity = (MainActivity) getActivity();
-        activity.getSupportFragmentManager().beginTransaction()
-                .replace(R.id.fragment_container, fragment)
-                .addToBackStack(null)
-                .commit();
-
         BottomNavigationView navigationView = activity.findViewById(R.id.bottom_navigation);
         navigationView.setSelectedItemId(navItemId);
     }

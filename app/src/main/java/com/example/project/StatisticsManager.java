@@ -1,5 +1,7 @@
 package com.example.project;
 
+import java.util.Locale;
+
 /**
  * Tracks colony-wide mission statistics shown in the Statistics screen.
  */
@@ -51,7 +53,7 @@ public class StatisticsManager {
                 + "Total Missions: " + totalMissions + "\n"
                 + "Wins: " + totalWins + "\n"
                 + "Losses: " + totalLosses + "\n"
-                + "Win Rate: " + String.format("%.1f", winRate) + "%";
+                + "Win Rate: " + String.format(Locale.getDefault(), "%.1f", winRate) + "%";
     }
 
     /**
