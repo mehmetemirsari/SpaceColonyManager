@@ -1,1 +1,1 @@
-
+We learned from AI how to implement things we didn't know about (like background music playback, some attack/defense systems, save/load systems, and bottom navigators) that would make coding easier for us, and we focused on implementing them as much as possible and seeing what they added to our experience. We used AI in writing JavaDocs to fix bugs we got wrong or couldn't solve, and for more proper annotations. We also used AI to polish the code and make it look better, and to predict bugs that might occur in later parts of the game that we can't currently see.
