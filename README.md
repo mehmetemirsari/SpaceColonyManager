@@ -1,7 +1,3 @@
-# !!IMPORTANT!!
-
-Don't forget to remove unrelated files from the project such as uml, uml2, uml3!!
-
 # Space Colony Manager
 
 Space Colony Manager is an Android game project. The player manages a small space colony by recruiting specialists, training crew members, preparing missions, and responding to growing threats before the colony collapses.
@@ -62,6 +58,3 @@ The game combines colony management and turn-based mission mechanics. Players mu
 ## UML's
 
 You can find the related UML diagrams as uml.png, uml2.png and uml3.png.
-## Contributors
-Emir: gameplay systems, technical structure, mission mechanics
-Gülse: interface, player flow, accessibility, summary and polish
